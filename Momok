@@ -218,12 +218,15 @@ def help_owner(update: Update, context: CallbackContext):
         "📋 𝗣𝗔𝗥𝗧𝗡𝗘𝗥\n"
         "➜ /listpartner\n\n"
 
+        "📢 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧\n"
+        "➜ /bc pesan (kirim ke semua user)\n\n"
+
         "⚙️ 𝗦𝗜𝗦𝗧𝗘𝗠\n"
         "➜ /on   (aktifkan)\n"
         "➜ /off  (matikan)\n\n"
 
         "━━━━━━━━━━━━━━━━━━\n"
-        "⚡ Klik tombol di bawah / pakai command manual"
+        "⚡ Klik tombol / pakai command manual"
     )
 
     keyboard = InlineKeyboardMarkup([
@@ -237,6 +240,9 @@ def help_owner(update: Update, context: CallbackContext):
         ],
         [
             InlineKeyboardButton("📋 Partner", callback_data="cmd_listpartner")
+        ],
+        [
+            InlineKeyboardButton("📢 Broadcast", callback_data="cmd_bc")
         ],
         [
             InlineKeyboardButton("🟢 ON", callback_data="cmd_on"),
@@ -331,8 +337,65 @@ def on_cmd(update, context):
     WORKER_ACTIVE = True
     update.message.reply_text("✅ Tagall diaktifkan")
 
+def bc_cmd(update, context):
+    if update.effective_user.id not in OWNER_IDS:
+        return
+
+    data = load_setting()
+    users = data.get("users", [])
+
+    if not users:
+        update.message.reply_text("❌ Tidak ada user")
+        return
+
+    msg = update.message
+
+    success = 0
+    failed = 0
+
+    update.message.reply_text("🚀 Broadcast dimulai...")
+
+    for user_id in users:
+        try:
+            # 🔥 PRIORITAS: REPLY MESSAGE (ALL TYPE)
+            if msg.reply_to_message:
+                context.bot.copy_message(
+                    chat_id=user_id,
+                    from_chat_id=msg.chat_id,
+                    message_id=msg.reply_to_message.message_id
+                )
+
+            # 🔥 TEXT BIASA
+            elif context.args:
+                text = " ".join(context.args)
+                context.bot.send_message(chat_id=user_id, text=text)
+
+            else:
+                continue
+
+            success += 1
+            time.sleep(5)  # ⏳ DELAY 5 DETIK
+
+        except:
+            failed += 1
+
+    update.message.reply_text(
+        f"📢 Broadcast selesai\n\n✅ {success} berhasil\n❌ {failed} gagal"
+    )
+
 def start_cmd(update: Update, context: CallbackContext):
     data = load_setting()
+
+    user_id = update.effective_user.id
+
+    users = data.get("users", [])
+
+    if user_id not in users:
+        users.append(user_id)
+        data["users"] = users
+        save_setting(data)
+
+    update.message.reply_text("✅ Bot aktif")
 
     # ================= LOADING MESSAGE =================
     msg = update.message.reply_text("⚡  Initializing...")
@@ -573,7 +636,17 @@ def button_handler(update: Update, context: CallbackContext):
         context.bot.send_message(
             chat_id=query.from_user.id,
             text="🔴 Tagall berhasil dimatikan"
-        )    
+        )
+
+    # 🔥 TAMBAHAN BROADCAST (TIDAK MENGUBAH YANG LAIN)
+    elif query.data == "cmd_bc":
+        if query.from_user.id not in OWNER_IDS:
+            return
+
+        context.bot.send_message(
+            chat_id=query.from_user.id,
+            text="📢 Kirim broadcast pakai:\n/bc pesan"
+        )
         
 # ================= TELETHON =================
 
@@ -1139,6 +1212,7 @@ def main():
     dp.add_handler(CommandHandler("delrules", del_rules))
     dp.add_handler(CommandHandler("off", off_cmd))
     dp.add_handler(CommandHandler("on", on_cmd))
+    dp.add_handler(CommandHandler("bc", bc_cmd))
 
     # ================= CALLBACK =================
     dp.add_handler(CallbackQueryHandler(button_handler))
