@@ -1016,6 +1016,7 @@ def is_user_joined(user_id):
         return member.status in ["member", "administrator", "creator"]
     except:
         return False
+
 # ================= HANDLER =================
 def handle_private(update: Update, context: CallbackContext):
     global running_task
@@ -1047,6 +1048,17 @@ def handle_private(update: Update, context: CallbackContext):
 
     # ================= LANJUT =================
     text = msg.text or ""
+
+    # ================= FILTER AWAL =================
+
+    # ❌ TAGALL OFF
+    if not WORKER_ACTIVE:
+        msg.reply_text("❌ Maaf, tagall sedang OFF")
+        return
+
+    # ❌ CEK HARUS ADA TEXT
+    if not text:
+        return
 
     # ================= VALIDASI LINK =================
     links = re.findall(r"(https?://t\.me/\S+)", text)
