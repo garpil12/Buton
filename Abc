@@ -26,6 +26,7 @@ FORCE_LINK = "https://t.me/officialhyperion"
 OWNER_IDS = [8209644174, 5674665043]
 PARTNER_FILE = "partner.json0"
 SETTING_FILE = "setting.json0"
+BUTTON_FILE = "buttons.json0"
 
 api_id = 33370509
 api_hash = "669af6caebf2aca264b16cf8b40d37b2"
@@ -34,17 +35,29 @@ client = TelegramClient("session_new0", api_id, api_hash)
 task_queue = Queue()
 running_task = False  # 🔥 ANTI DOUBLE TASK
 
-# ================= FILE =================
+# ================= SETTING =================
+def load_setting():
+    try:
+        with open(SETTING_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_setting(data):
+    with open(SETTING_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+# ================= FILE (JANGAN DIUBAH) =================
 def load_partner():
     if not os.path.exists(PARTNER_FILE):
-        return {}  # 🔥 FIX
+        return []  # 🔥 BALIK KE SEMULA (LIST)
     try:
         with open(PARTNER_FILE, "r") as f:
             return json.load(f)
     except Exception as e:
         print("❌ load error:", e)
-        return {}  # 🔥 FIX
-
+        return []
 
 def save_partner(data):
     try:
@@ -55,7 +68,7 @@ def save_partner(data):
         print("❌ save error:", e)
 
 
-# ================= BUTTON FILE =================
+# ================= BUTTON FILE (BARU) =================
 def load_buttons():
     if not os.path.exists(BUTTON_FILE):
         return {}
@@ -66,7 +79,6 @@ def load_buttons():
         print("❌ load button error:", e)
         return {}
 
-
 def save_buttons(data):
     try:
         with open(BUTTON_FILE, "w") as f:
@@ -76,26 +88,12 @@ def save_buttons(data):
         print("❌ save button error:", e)
 
 
-# ================= SETTING =================
-def load_setting():
-    try:
-        with open(SETTING_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return {}
-
-
-def save_setting(data):
-    with open(SETTING_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-
-
 # ================= GLOBAL =================
 manual_setup = {}
 stop_flag = {}
 manual_messages = {}
 
-custom_buttons = load_partner()  # 🔥 SEKARANG AMAN
+custom_buttons = load_buttons()  # 🔥 PENTING (BUKAN load_partner)
 
 # ================= UTIL =================
 
