@@ -34,6 +34,11 @@ client = TelegramClient("session_new0", api_id, api_hash)
 task_queue = Queue()
 running_task = False  # 🔥 ANTI DOUBLE TASK
 
+# ================= MANUAL TAGALL GLOBAL =================
+manual_setup = {}
+stop_flag = {}
+manual_messages = {}
+
 # ================= SETTING =================
 
 
@@ -175,7 +180,156 @@ def list_partner(update, context):
 
     update.message.reply_text(text)
 
+# ================= HANDLE DURASI =================
+def handle_durasi(update, context):
+    query = update.callback_query
+    chat_id = query.message.chat.id
 
+    query.answer()
+
+    if chat_id not in manual_setup:
+        query.edit_message_text("❌ Session hilang")
+        return
+
+    data = query.data.split("_")[1]
+
+    durasi_map = {
+        "2": 120,
+        "5": 300,
+        "10": 600,
+        "30": 1800,
+        "60": 3600,
+        "unli": None
+    }
+
+    duration = durasi_map.get(data)
+
+    setup = manual_setup[chat_id]
+    msg = setup["msg"]
+    mode = setup["mode"]
+
+    stop_flag[chat_id] = False
+    manual_messages[chat_id] = []
+
+    query.edit_message_text("🚀 Tagall manual dimulai...")
+
+    members = get_members(chat_id)
+    if not members:
+        return
+
+    user_ids = list(members.keys())
+    total = len(user_ids)
+
+    random.shuffle(user_ids)
+
+    BATCH_SIZE = 5
+    BASE_DELAY = 1.2
+    start_time = time.time()
+
+    sent = 0
+    error_count = 0
+    delay = BASE_DELAY
+
+    while True:
+
+        # STOP MANUAL
+        if stop_flag.get(chat_id):
+            break
+
+        # CEK DURASI
+        if duration and time.time() - start_time > duration:
+            break
+
+        for i in range(0, total, BATCH_SIZE):
+
+            if stop_flag.get(chat_id):
+                break
+
+            if duration and time.time() - start_time > duration:
+                break
+
+            batch = user_ids[i:i+BATCH_SIZE]
+
+            mention_text = ""
+            for uid in batch:
+                name = html.escape(members[uid])
+                mention_text += f'<a href="tg://user?id={uid}">{name}</a> '
+
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🛑 STOP", callback_data="manual_stop")]
+            ])
+
+            retry = 0
+
+            while retry < 3:
+                try:
+                    if mode == "reply":
+                        sent_msg = context.bot.send_message(
+                            chat_id,
+                            mention_text,
+                            reply_to_message_id=msg.message_id,
+                            parse_mode="HTML",
+                            reply_markup=keyboard
+                        )
+                    else:
+                        sent_msg = context.bot.send_message(
+                            chat_id,
+                            f"{msg}\n\n{mention_text}",
+                            parse_mode="HTML",
+                            reply_markup=keyboard
+                        )
+
+                    manual_messages[chat_id].append(sent_msg.message_id)
+
+                    sent += len(batch)
+                    error_count = 0
+                    delay = max(1.0, delay - 0.05)
+
+                    break
+
+                except Exception as e:
+                    retry += 1
+                    error_count += 1
+
+                    if "Retry in" in str(e):
+                        try:
+                            wait = int(re.search(r"Retry in (\d+)", str(e)).group(1))
+                            time.sleep(wait + 1)
+                        except:
+                            time.sleep(5)
+
+                    elif "Too Many Requests" in str(e):
+                        delay += 1.5
+                        time.sleep(delay)
+
+                    else:
+                        time.sleep(2)
+
+            if error_count >= 3:
+                delay += 0.5
+
+            # 🔥 HARD LIMIT
+            if sent >= 10000:
+                context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai, auto stop")
+                stop_flag[chat_id] = True
+                break
+
+            time.sleep(delay + random.uniform(0.2, 0.5))
+
+        # kalau bukan unlimited → stop sekali loop
+        if duration:
+            break
+
+    # ================= SELESAI =================
+    keyboard_clear = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
+    ])
+
+    context.bot.send_message(
+        chat_id,
+        f"✅ Tagall selesai\n👥 Total tag: {sent}",
+        reply_markup=keyboard_clear
+    )
 
 # ================= OWNER SET =================
 
@@ -516,19 +670,19 @@ def start_cmd(update: Update, context: CallbackContext):
             )
 
 # ================= CALLBACK =================
-
 def button_handler(update: Update, context: CallbackContext):
-    global WORKER_ACTIVE  # 🔥 WAJIB DI SINI
+    global WORKER_ACTIVE
 
     query = update.callback_query
     query.answer()
     data = load_setting()
+    chat_id = query.message.chat.id
 
-    # ✅ RULES (BEBAS, GA PERLU JOIN)
+    # ================= RULES =================
     if query.data == "rules":
         query.message.reply_text(data.get("rules", "tidak ada rules"))
 
-    # 🔒 CEK JOIN (WAJIB JOIN)
+    # ================= CEK JOIN =================
     elif query.data == "cek_join":
         user_id = query.from_user.id
 
@@ -536,6 +690,30 @@ def button_handler(update: Update, context: CallbackContext):
             query.message.edit_text("✅ Sudah join, kirim ulang perintah")
         else:
             query.answer("JOIN DULU WOI 😡", show_alert=True)
+
+    # ================= STOP MANUAL =================
+    elif query.data == "manual_stop":
+        stop_flag[chat_id] = True
+        query.answer("⛔ Dihentikan")
+
+    # ================= CLEAR CHAT =================
+    elif query.data == "manual_clear":
+        msgs = manual_messages.get(chat_id, [])
+
+        for msg_id in msgs:
+            try:
+                context.bot.delete_message(chat_id, msg_id)
+                time.sleep(0.15)
+            except:
+                pass
+
+        manual_messages[chat_id] = []
+        query.answer("🧹 Dibersihkan")
+
+    # ================= DURASI BUTTON =================
+    elif query.data.startswith("dur_"):
+        handle_durasi(update, context)
+
 
     # ================= OWNER BUTTON =================
 
@@ -1228,8 +1406,8 @@ def main():
     dp.add_handler(CommandHandler("tagall", tagall_cmd))
 
     # ================= CALLBACK =================
+    dp.add_handler(CallbackQueryHandler(handle_durasi, pattern="^dur_"))
     dp.add_handler(CallbackQueryHandler(button_handler))
-
     # ================= PRIVATE =================
     dp.add_handler(
         MessageHandler(
