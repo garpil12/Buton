@@ -38,7 +38,7 @@ running_task = False  # 🔥 ANTI DOUBLE TASK
 manual_setup = {}
 stop_flag = {}
 manual_messages = {}
-btn = custom_buttons.get(chat_id)
+custom_buttons = load_partner()  # 🔥 kalau pake JSON
 
 # ================= SETTING =================
 
