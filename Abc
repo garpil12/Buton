@@ -222,8 +222,8 @@ def handle_durasi(update, context):
 
     random.shuffle(user_ids)
 
-    BATCH_SIZE = 5
-    BASE_DELAY = 1.2
+    BATCH_SIZE = 4
+    BASE_DELAY = 1.3
     start_time = time.time()
 
     sent = 0
