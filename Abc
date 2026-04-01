@@ -273,16 +273,24 @@ def list_partner(update, context):
     update.message.reply_text(text)
 
 def addbuttontag_cmd(update, context):
+    print("🔥 addbuttontag kepanggil")
+
     chat = update.effective_chat
     user = update.effective_user
 
-    # admin only
-    try:
-        member = context.bot.get_chat_member(chat.id, user.id)
-        if member.status not in ["administrator", "creator"]:
-            update.message.reply_text("❌ Khusus admin")
-            return
-    except:
+    # 🔥 HARUS PRIVATE
+    if chat.type != "private":
+        update.message.reply_text("❌ Gunakan di private bot")
+        return
+
+    # 🔥 OWNER ONLY
+    if user.id not in OWNER_IDS:
+        update.message.reply_text("❌ Khusus owner")
+        return
+
+    # 🔥 FORMAT
+    if not context.args:
+        update.message.reply_text("Format:\n/addbuttontag NAMA - LINK")
         return
 
     text = " ".join(context.args)
@@ -295,9 +303,18 @@ def addbuttontag_cmd(update, context):
     name = name.strip()
     link = link.strip()
 
-    custom_buttons[chat.id] = {"name": name, "link": link}
+    # 🔥 LOOP SEMUA TARGET CHAT
+    for gc_id in TARGET_CHATS:
+        custom_buttons[str(gc_id)] = {
+            "name": name,
+            "link": link
+        }
 
-    update.message.reply_text(f"✅ Button diset:\n{name} -> {link}")
+    save_partner(custom_buttons)
+
+    update.message.reply_text(
+        f"✅ Button diset ke {len(TARGET_CHATS)} grup\n{name} -> {link}"
+    )
 
 # ================= HANDLE DURASI =================
 def handle_durasi(update, context):
