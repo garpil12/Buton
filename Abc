@@ -360,141 +360,137 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
     start_time = time.time()
     sent = 0
 
-# ================= LOOP =================
+    # 🔥 ambil button custom
+    btn = custom_buttons.get(str(chat_id))
 
-btn = custom_buttons.get(chat_id)  # 🔥 ambil button custom
+    # ================= LOOP =================
+    while True:
 
-while True:
-
-    # 🔥 STOP GLOBAL
-    if stop_flag.get(chat_id):
-        return
-
-    # 🔥 CEK DURASI
-    if duration and time.time() - start_time > duration:
-        break
-
-    for i in range(0, len(user_ids), BATCH_SIZE):
-
-        # 🔥 STOP SEBELUM KIRIM
+        # 🔥 STOP GLOBAL
         if stop_flag.get(chat_id):
             return
 
+        # 🔥 CEK DURASI
         if duration and time.time() - start_time > duration:
             break
 
-        batch = user_ids[i:i+BATCH_SIZE]
+        for i in range(0, len(user_ids), BATCH_SIZE):
 
-        mention_text = ""
-        for uid in batch:
-            name = html.escape(members[uid])
-            mention_text += f'<a href="tg://user?id={uid}">{name}</a> '
+            # 🔥 STOP SEBELUM KIRIM
+            if stop_flag.get(chat_id):
+                return
 
-        # 🔥 BUTTON TIAP PESAN
-        if btn:
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton(btn["name"], url=btn["link"])]
-            ])
-        else:
-            keyboard = None
+            if duration and time.time() - start_time > duration:
+                break
 
-        try:
-            if mode == "reply":
-                sent_msg = context.bot.send_message(
-                    chat_id,
-                    mention_text,
-                    reply_to_message_id=msg.message_id,
-                    parse_mode="HTML",
-                    reply_markup=keyboard
-                )
+            batch = user_ids[i:i+BATCH_SIZE]
+
+            mention_text = ""
+            for uid in batch:
+                name = html.escape(members[uid])
+                mention_text += f'<a href="tg://user?id={uid}">{name}</a> '
+
+            # 🔥 BUTTON TIAP PESAN
+            if btn:
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(btn["name"], url=btn["link"])]
+                ])
             else:
-                sent_msg = context.bot.send_message(
-                    chat_id,
-                    f"{msg}\n\n{mention_text}",
-                    parse_mode="HTML",
-                    reply_markup=keyboard
-                )
+                keyboard = None
 
-            manual_messages[chat_id].append(sent_msg.message_id)
-            sent += len(batch)
+            try:
+                if mode == "reply":
+                    sent_msg = context.bot.send_message(
+                        chat_id,
+                        mention_text,
+                        reply_to_message_id=msg.message_id,
+                        parse_mode="HTML",
+                        reply_markup=keyboard
+                    )
+                else:
+                    sent_msg = context.bot.send_message(
+                        chat_id,
+                        f"{msg}\n\n{mention_text}",
+                        parse_mode="HTML",
+                        reply_markup=keyboard
+                    )
 
-        except Exception as e:
-            if "Retry in" in str(e):
-                try:
-                    wait = int(re.search(r"Retry in (\d+)", str(e)).group(1))
-                    time.sleep(wait + 1)
-                except:
-                    time.sleep(3)
-            else:
-                time.sleep(1)
+                manual_messages[chat_id].append(sent_msg.message_id)
+                sent += len(batch)
 
-        # 🔥 STOP SETELAH KIRIM
+            except Exception as e:
+                if "Retry in" in str(e):
+                    try:
+                        wait = int(re.search(r"Retry in (\d+)", str(e)).group(1))
+                        time.sleep(wait + 1)
+                    except:
+                        time.sleep(3)
+                else:
+                    time.sleep(1)
+
+            # 🔥 STOP SETELAH KIRIM
+            if stop_flag.get(chat_id):
+                return
+
+            # 🔥 HARD LIMIT
+            if sent >= 10000:
+                context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai")
+                stop_flag[chat_id] = True
+                return
+
+            # 🔥 DELAY INTERRUPTIBLE (STOP CEPAT)
+            for _ in range(int(delay * 10)):
+                if stop_flag.get(chat_id):
+                    return
+                time.sleep(0.1)
+
+        # 🔥 STOP SETELAH LOOP
         if stop_flag.get(chat_id):
             return
 
-        # 🔥 HARD LIMIT
-        if sent >= 10000:
-            context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai")
-            stop_flag[chat_id] = True
-            return
+        if duration:
+            break
 
-        # 🔥 DELAY INTERRUPTIBLE (STOP CEPAT)
-        for _ in range(int(delay * 10)):
-            if stop_flag.get(chat_id):
-                return
-            time.sleep(0.1)
+    # ================= SELESAI =================
 
-    # 🔥 STOP SETELAH LOOP
-    if stop_flag.get(chat_id):
-        return
+    # 🔥 BUTTON AKHIR (CUSTOM + CLEAR)
+    if btn:
+        keyboard_clear = InlineKeyboardMarkup([
+            [InlineKeyboardButton(btn["name"], url=btn["link"])],
+            [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
+        ])
+    else:
+        keyboard_clear = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
+        ])
 
-    if duration:
-        break
+    done_msg = context.bot.send_message(
+        chat_id,
+        f"✅ Tagall selesai\n👥 Total tag: {sent}",
+        reply_markup=keyboard_clear
+    )
 
+    # ================= AUTO CLEAR =================
+    def auto_clear():
+        time.sleep(120)
 
-# ================= SELESAI =================
+        msgs = manual_messages.get(chat_id, [])
 
-# 🔥 BUTTON AKHIR (CUSTOM + CLEAR)
-btn = custom_buttons.get(chat_id)
+        for msg_id in msgs:
+            try:
+                context.bot.delete_message(chat_id, msg_id)
+            except:
+                pass
 
-if btn:
-    keyboard_clear = InlineKeyboardMarkup([
-        [InlineKeyboardButton(btn["name"], url=btn["link"])],
-        [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
-    ])
-else:
-    keyboard_clear = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
-    ])
-
-done_msg = context.bot.send_message(
-    chat_id,
-    f"✅ Tagall selesai\n👥 Total tag: {sent}",
-    reply_markup=keyboard_clear
-)
-
-
-# ================= AUTO CLEAR =================
-def auto_clear():
-    time.sleep(120)  # 2 menit
-
-    msgs = manual_messages.get(chat_id, [])
-
-    for msg_id in msgs:
         try:
-            context.bot.delete_message(chat_id, msg_id)
+            context.bot.delete_message(chat_id, done_msg.message_id)
         except:
             pass
 
-    try:
-        context.bot.delete_message(chat_id, done_msg.message_id)
-    except:
-        pass
+        manual_messages[chat_id] = []
 
-    manual_messages[chat_id] = []
-
-import threading
-threading.Thread(target=auto_clear, daemon=True).start()    
+    import threading
+    threading.Thread(target=auto_clear, daemon=True).start()
                   
                             
 # ================= OWNER SET =================
@@ -835,7 +831,7 @@ def start_cmd(update: Update, context: CallbackContext):
                 parse_mode="Markdown"
             )
 
-================= CALLBACK =================
+# ================= CALLBACK =================
 def button_handler(update: Update, context: CallbackContext):
     query = update.callback_query
     chat_id = query.message.chat.id
