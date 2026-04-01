@@ -187,7 +187,10 @@ def tagall_cmd(update, context):
          InlineKeyboardButton("Unlimited", callback_data="dur_unli")]
     ])
 
-    update.message.reply_text("⏱ Pilih durasi:", reply_markup=keyboa
+    update.message.reply_text(
+        "⏱ Pilih durasi:",
+        reply_markup=keyboard
+    )
 
 def list_partner(update, context):
     if update.effective_user.id not in OWNER_IDS:
