@@ -374,6 +374,7 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
     delay = 1.2
     start_time = time.time()
     sent = 0
+    stopped = False  # 🔥 FLAG WAJIB
 
     # 🔥 ambil button custom
     btn = custom_buttons.get(str(chat_id))
@@ -383,7 +384,8 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
 
         # 🔥 STOP GLOBAL
         if stop_flag.get(chat_id):
-            return
+            stopped = True
+            break
 
         # 🔥 CEK DURASI
         if duration and time.time() - start_time > duration:
@@ -393,7 +395,8 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
 
             # 🔥 STOP SEBELUM KIRIM
             if stop_flag.get(chat_id):
-                return
+                stopped = True
+                break
 
             if duration and time.time() - start_time > duration:
                 break
@@ -445,28 +448,39 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
 
             # 🔥 STOP SETELAH KIRIM
             if stop_flag.get(chat_id):
-                return
+                stopped = True
+                break
 
             # 🔥 HARD LIMIT
             if sent >= 10000:
                 context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai")
-                stop_flag[chat_id] = True
-                return
+                stopped = True
+                break
 
-            # 🔥 DELAY INTERRUPTIBLE (STOP CEPAT)
+            # 🔥 DELAY INTERRUPTIBLE
             for _ in range(int(delay * 10)):
                 if stop_flag.get(chat_id):
-                    return
+                    stopped = True
+                    break
                 time.sleep(0.1)
 
-        # 🔥 STOP SETELAH LOOP
-        if stop_flag.get(chat_id):
-            return
+            if stopped:
+                break
+
+        # 🔥 KELUAR DARI WHILE
+        if stopped:
+            break
 
         if duration:
             break
 
     # ================= SELESAI =================
+
+    # 🔥 TENTUIN TEXT
+    if stopped:
+        text_done = "⛔ Tagall dihentikan"
+    else:
+        text_done = f"✅ Tagall selesai\n👥 Total tag: {sent}"
 
     # 🔥 BUTTON AKHIR (CUSTOM + CLEAR)
     if btn:
@@ -479,9 +493,10 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
             [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
         ])
 
+    # 🔥 KIRIM PESAN DONE
     done_msg = context.bot.send_message(
         chat_id,
-        f"✅ Tagall selesai\n👥 Total tag: {sent}",
+        text_done,
         reply_markup=keyboard_clear
     )
 
