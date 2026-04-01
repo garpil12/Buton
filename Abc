@@ -162,6 +162,33 @@ def del_partner(update, context):
     update.message.reply_text("✅   Partner dihapus")
 
 
+def tagall_cmd(update, context):
+    chat = update.effective_chat
+
+    text = " ".join(context.args)
+
+    if text:
+        manual_setup[chat.id] = {"msg": text, "mode": "text"}
+    elif update.message.reply_to_message:
+        manual_setup[chat.id] = {
+            "msg": update.message.reply_to_message,
+            "mode": "reply"
+        }
+    else:
+        update.message.reply_text("❌ Isi teks atau reply pesan")
+        return
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("2 menit", callback_data="dur_2"),
+         InlineKeyboardButton("5 menit", callback_data="dur_5")],
+        [InlineKeyboardButton("10 menit", callback_data="dur_10"),
+         InlineKeyboardButton("30 menit", callback_data="dur_30")],
+        [InlineKeyboardButton("60 menit", callback_data="dur_60"),
+         InlineKeyboardButton("Unlimited", callback_data="dur_unli")]
+    ])
+
+    update.message.reply_text("⏱ Pilih durasi:", reply_markup=keyboa
+
 def list_partner(update, context):
     if update.effective_user.id not in OWNER_IDS:
         return
