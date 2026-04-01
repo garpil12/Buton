@@ -161,9 +161,22 @@ def del_partner(update, context):
     save_partner(new_data)
     update.message.reply_text("✅   Partner dihapus")
 
-
 def tagall_cmd(update, context):
     chat = update.effective_chat
+    user = update.effective_user
+
+    # ❌ Jangan di private
+    if chat.type == "private":
+        return
+
+    # 🔥 CEK ADMIN
+    try:
+        member = context.bot.get_chat_member(chat.id, user.id)
+        if member.status not in ["administrator", "creator"]:
+            update.message.reply_text("❌ Khusus admin")
+            return
+    except:
+        return
 
     text = " ".join(context.args)
 
@@ -193,16 +206,32 @@ def tagall_cmd(update, context):
     )
 
 def cancel_cmd(update, context):
-    if update.effective_user.id not in OWNER_IDS:
+    global stop_flag
+
+    chat = update.effective_chat
+    user = update.effective_user
+
+    # ❌ Jangan boleh di private
+    if chat.type == "private":
         return
 
-    chat_id = update.effective_chat.id
-    stop_flag[chat_id] = True
+    # 🔥 CEK ADMIN
+    try:
+        member = context.bot.get_chat_member(chat.id, user.id)
+        if member.status not in ["administrator", "creator"]:
+            update.message.reply_text("❌ Khusus admin")
+            return
+    except:
+        return
+
+    # 🔥 STOP
+    stop_flag[chat.id] = True
 
     try:
-        context.bot.send_message(chat_id, "⛔ Tagall dihentikan")
+        context.bot.send_message(chat.id, "⛔ Tagall dihentikan")
     except:
         pass
+        
 
 def list_partner(update, context):
     if update.effective_user.id not in OWNER_IDS:
@@ -254,10 +283,22 @@ def handle_durasi(update, context):
     msg = setup["msg"]
     mode = setup["mode"]
 
+    query.edit_message_text("🚀 Tagall manual dimulai...")
+
+    import threading
+    t = threading.Thread(
+        target=run_tagall_manual,
+        args=(context, chat_id, msg, mode, duration),
+        daemon=True
+    )
+    t.start()
+
+# ================= RUN MANUAL TAGALL =================
+def run_tagall_manual(context, chat_id, msg, mode, duration):
+    global stop_flag, manual_messages
+
     stop_flag[chat_id] = False
     manual_messages[chat_id] = []
-
-    query.edit_message_text("🚀 Tagall manual dimulai...")
 
     members = get_members(chat_id)
     if not members:
@@ -269,15 +310,14 @@ def handle_durasi(update, context):
     BATCH_SIZE = 4
     delay = 1.2
     start_time = time.time()
-
     sent = 0
 
     # ================= LOOP =================
     while True:
 
-        # 🔥 STOP GLOBAL (LANGSUNG MATI)
+        # 🔥 STOP GLOBAL
         if stop_flag.get(chat_id):
-            break
+            return
 
         # 🔥 CEK DURASI
         if duration and time.time() - start_time > duration:
@@ -285,9 +325,9 @@ def handle_durasi(update, context):
 
         for i in range(0, len(user_ids), BATCH_SIZE):
 
-            # 🔥 STOP CEPAT (SEBELUM KIRIM)
+            # 🔥 STOP SEBELUM KIRIM
             if stop_flag.get(chat_id):
-                break
+                return
 
             if duration and time.time() - start_time > duration:
                 break
@@ -329,34 +369,34 @@ def handle_durasi(update, context):
                         wait = int(re.search(r"Retry in (\d+)", str(e)).group(1))
                         time.sleep(wait + 1)
                     except:
-                        time.sleep(5)
-                elif "Too Many Requests" in str(e):
-                    delay += 1
-                    time.sleep(delay)
+                        time.sleep(3)
                 else:
-                    time.sleep(2)
+                    time.sleep(1)
 
-            # 🔥 STOP SETELAH KIRIM (BIAR INSTAN)
+            # 🔥 STOP SETELAH KIRIM
             if stop_flag.get(chat_id):
-                break
+                return
 
             # 🔥 HARD LIMIT
             if sent >= 10000:
-                context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai, auto stop")
+                context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai")
                 stop_flag[chat_id] = True
-                break
+                return
 
-            time.sleep(delay + random.uniform(0.2, 0.4))
+            # 🔥 DELAY INTERRUPTIBLE
+            for _ in range(int(delay * 10)):
+                if stop_flag.get(chat_id):
+                    return
+                time.sleep(0.1)
 
-        # 🔥 STOP LAGI SETELAH LOOP
+        # 🔥 STOP SETELAH LOOP
         if stop_flag.get(chat_id):
-            break
+            return
 
-        # 🔥 kalau bukan unlimited → cuma 1 putaran
         if duration:
             break
 
-    # ================= SELESAI =================
+    # ================= SELESAI (CUMA 1X) =================
     keyboard_clear = InlineKeyboardMarkup([
         [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
     ])
@@ -366,6 +406,7 @@ def handle_durasi(update, context):
         f"✅ Tagall selesai\n👥 Total tag: {sent}",
         reply_markup=keyboard_clear
     )
+                  
                             
 # ================= OWNER SET =================
 
@@ -709,6 +750,7 @@ def start_cmd(update: Update, context: CallbackContext):
 def button_handler(update: Update, context: CallbackContext):
     query = update.callback_query
     chat_id = query.message.chat.id
+    user_id = query.from_user.id
 
     try:
         query.answer()
@@ -724,24 +766,36 @@ def button_handler(update: Update, context: CallbackContext):
 
     # ================= CEK JOIN =================
     if query.data == "cek_join":
-        user_id = query.from_user.id
-
         if is_user_joined(user_id):
             query.message.edit_text("✅ Sudah join, kirim ulang perintah")
         else:
-            try:
-                query.answer("JOIN DULU WOI 😡", show_alert=True)
-            except:
-                pass
+            query.answer("JOIN DULU WOI 😡", show_alert=True)
         return
 
     # ================= STOP MANUAL =================
     if query.data == "manual_stop":
+        try:
+            member = context.bot.get_chat_member(chat_id, user_id)
+            if member.status not in ["administrator", "creator"]:
+                query.answer("❌ Khusus admin", show_alert=True)
+                return
+        except:
+            return
+
         stop_flag[chat_id] = True
-        return  # 🔥 WAJIB
+        manual_setup.pop(chat_id, None)  # 🔥 bersihin session
+        return
 
     # ================= CLEAR CHAT =================
     if query.data == "manual_clear":
+        try:
+            member = context.bot.get_chat_member(chat_id, user_id)
+            if member.status not in ["administrator", "creator"]:
+                query.answer("❌ Khusus admin", show_alert=True)
+                return
+        except:
+            return
+
         msgs = manual_messages.get(chat_id, [])
 
         for msg_id in msgs:
@@ -751,14 +805,12 @@ def button_handler(update: Update, context: CallbackContext):
                 pass
 
         manual_messages[chat_id] = []
-        return  # 🔥 WAJIB
+        return
 
     # ================= DURASI =================
     if query.data.startswith("dur_"):
         handle_durasi(update, context)
         return
-
-
 
     # ================= OWNER BUTTON =================
 
