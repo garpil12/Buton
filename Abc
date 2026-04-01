@@ -38,6 +38,7 @@ running_task = False  # 🔥 ANTI DOUBLE TASK
 manual_setup = {}
 stop_flag = {}
 manual_messages = {}
+btn = custom_buttons.get(chat_id)
 
 # ================= SETTING =================
 
@@ -75,6 +76,26 @@ def save_partner(data):
     except Exception as e:
         print("❌ save error:", e)
 
+# ================= BUTTON FILE =================
+
+def load_buttons():
+    if not os.path.exists(BUTTON_FILE):
+        return {}
+    try:
+        with open(BUTTON_FILE, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        print("❌ load button error:", e)
+        return {}
+
+
+def save_buttons(data):
+    try:
+        with open(BUTTON_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+        print("✅ BUTTON KE SAVE:", data)
+    except Exception as e:
+        print("❌ save button error:", e)
 
 # ================= UTIL =================
 
@@ -251,6 +272,33 @@ def list_partner(update, context):
 
     update.message.reply_text(text)
 
+def addbuttontag_cmd(update, context):
+    chat = update.effective_chat
+    user = update.effective_user
+
+    # admin only
+    try:
+        member = context.bot.get_chat_member(chat.id, user.id)
+        if member.status not in ["administrator", "creator"]:
+            update.message.reply_text("❌ Khusus admin")
+            return
+    except:
+        return
+
+    text = " ".join(context.args)
+
+    if "-" not in text:
+        update.message.reply_text("Format:\n/addbuttontag NAMA - LINK")
+        return
+
+    name, link = text.split("-", 1)
+    name = name.strip()
+    link = link.strip()
+
+    custom_buttons[chat.id] = {"name": name, "link": link}
+
+    update.message.reply_text(f"✅ Button diset:\n{name} -> {link}")
+
 # ================= HANDLE DURASI =================
 def handle_durasi(update, context):
     query = update.callback_query
@@ -312,100 +360,141 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
     start_time = time.time()
     sent = 0
 
-    # ================= LOOP =================
-    while True:
+# ================= LOOP =================
 
-        # 🔥 STOP GLOBAL
+btn = custom_buttons.get(chat_id)  # 🔥 ambil button custom
+
+while True:
+
+    # 🔥 STOP GLOBAL
+    if stop_flag.get(chat_id):
+        return
+
+    # 🔥 CEK DURASI
+    if duration and time.time() - start_time > duration:
+        break
+
+    for i in range(0, len(user_ids), BATCH_SIZE):
+
+        # 🔥 STOP SEBELUM KIRIM
         if stop_flag.get(chat_id):
             return
 
-        # 🔥 CEK DURASI
         if duration and time.time() - start_time > duration:
             break
 
-        for i in range(0, len(user_ids), BATCH_SIZE):
+        batch = user_ids[i:i+BATCH_SIZE]
 
-            # 🔥 STOP SEBELUM KIRIM
-            if stop_flag.get(chat_id):
-                return
+        mention_text = ""
+        for uid in batch:
+            name = html.escape(members[uid])
+            mention_text += f'<a href="tg://user?id={uid}">{name}</a> '
 
-            if duration and time.time() - start_time > duration:
-                break
-
-            batch = user_ids[i:i+BATCH_SIZE]
-
-            mention_text = ""
-            for uid in batch:
-                name = html.escape(members[uid])
-                mention_text += f'<a href="tg://user?id={uid}">{name}</a> '
-
+        # 🔥 BUTTON TIAP PESAN
+        if btn:
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("🛑 STOP", callback_data="manual_stop")]
+                [InlineKeyboardButton(btn["name"], url=btn["link"])]
             ])
+        else:
+            keyboard = None
 
-            try:
-                if mode == "reply":
-                    sent_msg = context.bot.send_message(
-                        chat_id,
-                        mention_text,
-                        reply_to_message_id=msg.message_id,
-                        parse_mode="HTML",
-                        reply_markup=keyboard
-                    )
-                else:
-                    sent_msg = context.bot.send_message(
-                        chat_id,
-                        f"{msg}\n\n{mention_text}",
-                        parse_mode="HTML",
-                        reply_markup=keyboard
-                    )
+        try:
+            if mode == "reply":
+                sent_msg = context.bot.send_message(
+                    chat_id,
+                    mention_text,
+                    reply_to_message_id=msg.message_id,
+                    parse_mode="HTML",
+                    reply_markup=keyboard
+                )
+            else:
+                sent_msg = context.bot.send_message(
+                    chat_id,
+                    f"{msg}\n\n{mention_text}",
+                    parse_mode="HTML",
+                    reply_markup=keyboard
+                )
 
-                manual_messages[chat_id].append(sent_msg.message_id)
-                sent += len(batch)
+            manual_messages[chat_id].append(sent_msg.message_id)
+            sent += len(batch)
 
-            except Exception as e:
-                if "Retry in" in str(e):
-                    try:
-                        wait = int(re.search(r"Retry in (\d+)", str(e)).group(1))
-                        time.sleep(wait + 1)
-                    except:
-                        time.sleep(3)
-                else:
-                    time.sleep(1)
+        except Exception as e:
+            if "Retry in" in str(e):
+                try:
+                    wait = int(re.search(r"Retry in (\d+)", str(e)).group(1))
+                    time.sleep(wait + 1)
+                except:
+                    time.sleep(3)
+            else:
+                time.sleep(1)
 
-            # 🔥 STOP SETELAH KIRIM
-            if stop_flag.get(chat_id):
-                return
-
-            # 🔥 HARD LIMIT
-            if sent >= 10000:
-                context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai")
-                stop_flag[chat_id] = True
-                return
-
-            # 🔥 DELAY INTERRUPTIBLE
-            for _ in range(int(delay * 10)):
-                if stop_flag.get(chat_id):
-                    return
-                time.sleep(0.1)
-
-        # 🔥 STOP SETELAH LOOP
+        # 🔥 STOP SETELAH KIRIM
         if stop_flag.get(chat_id):
             return
 
-        if duration:
-            break
+        # 🔥 HARD LIMIT
+        if sent >= 10000:
+            context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai")
+            stop_flag[chat_id] = True
+            return
 
-    # ================= SELESAI (CUMA 1X) =================
+        # 🔥 DELAY INTERRUPTIBLE (STOP CEPAT)
+        for _ in range(int(delay * 10)):
+            if stop_flag.get(chat_id):
+                return
+            time.sleep(0.1)
+
+    # 🔥 STOP SETELAH LOOP
+    if stop_flag.get(chat_id):
+        return
+
+    if duration:
+        break
+
+
+# ================= SELESAI =================
+
+# 🔥 BUTTON AKHIR (CUSTOM + CLEAR)
+btn = custom_buttons.get(chat_id)
+
+if btn:
+    keyboard_clear = InlineKeyboardMarkup([
+        [InlineKeyboardButton(btn["name"], url=btn["link"])],
+        [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
+    ])
+else:
     keyboard_clear = InlineKeyboardMarkup([
         [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
     ])
 
-    context.bot.send_message(
-        chat_id,
-        f"✅ Tagall selesai\n👥 Total tag: {sent}",
-        reply_markup=keyboard_clear
-    )
+done_msg = context.bot.send_message(
+    chat_id,
+    f"✅ Tagall selesai\n👥 Total tag: {sent}",
+    reply_markup=keyboard_clear
+)
+
+
+# ================= AUTO CLEAR =================
+def auto_clear():
+    time.sleep(120)  # 2 menit
+
+    msgs = manual_messages.get(chat_id, [])
+
+    for msg_id in msgs:
+        try:
+            context.bot.delete_message(chat_id, msg_id)
+        except:
+            pass
+
+    try:
+        context.bot.delete_message(chat_id, done_msg.message_id)
+    except:
+        pass
+
+    manual_messages[chat_id] = []
+
+import threading
+threading.Thread(target=auto_clear, daemon=True).start()    
                   
                             
 # ================= OWNER SET =================
@@ -746,7 +835,7 @@ def start_cmd(update: Update, context: CallbackContext):
                 parse_mode="Markdown"
             )
 
-# ================= CALLBACK =================
+================= CALLBACK =================
 def button_handler(update: Update, context: CallbackContext):
     query = update.callback_query
     chat_id = query.message.chat.id
@@ -1504,6 +1593,7 @@ def main():
     # 🔥 TAGALL (MANUAL)
     dp.add_handler(CommandHandler("tagall", tagall_cmd))
     dp.add_handler(CommandHandler("cancel", cancel_cmd))
+    dp.add_handler(CommandHandler("addbuttontag", addbuttontag_cmd))
   
     # ================= CALLBACK =================
     # 🔥 WAJIB DI ATAS (biar durasi ke detect dulu)
