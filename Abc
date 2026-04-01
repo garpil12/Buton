@@ -224,7 +224,7 @@ def handle_durasi(update, context):
     query = update.callback_query
     chat_id = query.message.chat.id
 
-    # 🔥 FIX query expired
+    # 🔥 ANTI ERROR CALLBACK EXPIRED
     try:
         query.answer()
     except:
@@ -240,9 +240,127 @@ def handle_durasi(update, context):
         "2": 120,
         "5": 300,
         "10": 600,
-  rkup=keyboard_clear
-    )
+        "30": 1800,
+        "60": 3600,
+        "unli": None
+    }
 
+    duration = durasi_map.get(data)
+
+    setup = manual_setup[chat_id]
+    msg = setup["msg"]
+    mode = setup["mode"]
+
+    stop_flag[chat_id] = False
+    manual_messages[chat_id] = []
+
+    query.edit_message_text("🚀 Tagall manual dimulai...")
+
+    members = get_members(chat_id)
+    if not members:
+        return
+
+    user_ids = list(members.keys())
+    total = len(user_ids)
+
+    random.shuffle(user_ids)
+
+    BATCH_SIZE = 4
+    BASE_DELAY = 1.3
+    start_time = time.time()
+
+    sent = 0
+    delay = BASE_DELAY
+
+    # 🔥 LOOP UTAMA
+    while True:
+
+        # 🔥 STOP GLOBAL
+        if stop_flag.get(chat_id):
+            break
+
+        # 🔥 CEK DURASI
+        if duration and time.time() - start_time > duration:
+            break
+
+        for i in range(0, total, BATCH_SIZE):
+
+            # 🔥 STOP CEPAT
+            if stop_flag.get(chat_id):
+                break
+
+            if duration and time.time() - start_time > duration:
+                break
+
+            batch = user_ids[i:i+BATCH_SIZE]
+
+            mention_text = ""
+            for uid in batch:
+                name = html.escape(members[uid])
+                mention_text += f'<a href="tg://user?id={uid}">{name}</a> '
+
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🛑 STOP", callback_data="manual_stop")]
+            ])
+
+            try:
+                if mode == "reply":
+                    sent_msg = context.bot.send_message(
+                        chat_id,
+                        mention_text,
+                        reply_to_message_id=msg.message_id,
+                        parse_mode="HTML",
+                        reply_markup=keyboard
+                    )
+                else:
+                    sent_msg = context.bot.send_message(
+                        chat_id,
+                        f"{msg}\n\n{mention_text}",
+                        parse_mode="HTML",
+                        reply_markup=keyboard
+                    )
+
+                manual_messages[chat_id].append(sent_msg.message_id)
+                sent += len(batch)
+
+            except Exception as e:
+                if "Retry in" in str(e):
+                    try:
+                        wait = int(re.search(r"Retry in (\d+)", str(e)).group(1))
+                        time.sleep(wait + 1)
+                    except:
+                        time.sleep(5)
+                elif "Too Many Requests" in str(e):
+                    delay += 1
+                    time.sleep(delay)
+                else:
+                    time.sleep(2)
+
+            # 🔥 STOP SETELAH SEND (SUPER CEPAT)
+            if stop_flag.get(chat_id):
+                break
+
+            # 🔥 HARD LIMIT
+            if sent >= 10000:
+                context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai, auto stop")
+                stop_flag[chat_id] = True
+                break
+
+            time.sleep(delay + random.uniform(0.2, 0.4))
+
+        if duration:
+            break
+
+    # ================= SELESAI =================
+    keyboard_clear = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]
+    ])
+
+    context.bot.send_message(
+        chat_id,
+        f"✅ Tagall selesai\n👥 Total tag: {sent}",
+        reply_markup=keyboard_clear
+    )
                     
 # ================= OWNER SET =================
 
