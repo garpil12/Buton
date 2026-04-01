@@ -358,6 +358,7 @@ def handle_durasi(update, context):
     t.start()
 
 # ================= RUN MANUAL TAGALL =================
+# ================= RUN MANUAL TAGALL =================
 def run_tagall_manual(context, chat_id, msg, mode, duration):
     global stop_flag, manual_messages
 
@@ -405,11 +406,14 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
             # 🔥 EMOJI RANDOM
             emoji_text = build_emoji()
 
-            # 🔥 MENTION HTML (BIAR BISA DI KLIK)
+            # 🔥 MENTION (USERNAME ATAS)
             mention_text = ""
             for uid in batch:
                 name = html.escape(members[uid])
-                mention_text += f'<a href="tg://user?id={uid}">{name}</a> '
+                mention_text += f'<a href="tg://user?id={uid}">{name}</a>\n'
+
+            # 🔥 FORMAT FINAL (USERNAME ATAS, EMOJI BAWAH)
+            final_text = f"{msg}\n\n{mention_text}\n{emoji_text}"
 
             # 🔥 BUTTON
             if btn:
@@ -423,7 +427,7 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
                 if mode == "reply":
                     sent_msg = context.bot.send_message(
                         chat_id,
-                        f"{emoji_text}{mention_text}",
+                        final_text,
                         reply_to_message_id=msg.message_id,
                         parse_mode="HTML",
                         reply_markup=keyboard
@@ -431,7 +435,7 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
                 else:
                     sent_msg = context.bot.send_message(
                         chat_id,
-                        f"{msg}\n\n{emoji_text}{mention_text}",
+                        final_text,
                         parse_mode="HTML",
                         reply_markup=keyboard
                     )
@@ -481,6 +485,7 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
     else:
         text_done = f"✅ Tagall selesai\n👥 Total tag: {sent}"
 
+    # 🔥 BUTTON AKHIR + CLEAR
     if btn:
         keyboard_clear = InlineKeyboardMarkup([
             [InlineKeyboardButton(btn["name"], url=btn["link"])],
@@ -511,10 +516,16 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
             except:
                 pass
 
+        try:
+            context.bot.delete_message(chat_id, done_msg.message_id)
+        except:
+            pass
+
         manual_messages[chat_id] = []
 
     threading.Thread(target=auto_clear, daemon=True).start()
-    
+            
+            
 
 def button_handler(update, context):
     query = update.callback_query
@@ -584,7 +595,11 @@ def help_owner(update: Update, context: CallbackContext):
         "➜ /listpartner\n\n"
 
         "📢 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧\n"
-        "➜ /bc pesan (kirim ke semua user)\n\n"
+        "➜ /bc pesan\n\n"
+
+        "🏷️ 𝗧𝗔𝗚𝗔𝗟𝗟\n"
+        "➜ /tagall pesan\n"
+        "➜ /addbuttontag nama|link\n\n"
 
         "⚙️ 𝗦𝗜𝗦𝗧𝗘𝗠\n"
         "➜ /on   (aktifkan)\n"
@@ -608,6 +623,9 @@ def help_owner(update: Update, context: CallbackContext):
         ],
         [
             InlineKeyboardButton("📢 Broadcast", callback_data="cmd_bc")
+        ],
+        [
+            InlineKeyboardButton("🏷️ Tagall", callback_data="cmd_tagall")
         ],
         [
             InlineKeyboardButton("🟢 ON", callback_data="cmd_on"),
