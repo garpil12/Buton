@@ -371,7 +371,7 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
     random.shuffle(user_ids)
 
     BATCH_SIZE = 4
-    delay = 1.2
+    delay = 1.6
     start_time = time.time()
     sent = 0
     stopped = False  # 🔥 FLAG WAJIB
