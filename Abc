@@ -199,7 +199,10 @@ def cancel_cmd(update, context):
     chat_id = update.effective_chat.id
     stop_flag[chat_id] = True
 
-    update.message.reply_text("⛔ Tagall dihentikan")
+    try:
+        context.bot.send_message(chat_id, "⛔ Tagall dihentikan")
+    except:
+        pass
 
 def list_partner(update, context):
     if update.effective_user.id not in OWNER_IDS:
@@ -707,7 +710,6 @@ def button_handler(update: Update, context: CallbackContext):
     query = update.callback_query
     chat_id = query.message.chat.id
 
-    # 🔥 WAJIB: 1x aja, anti expired
     try:
         query.answer()
     except:
@@ -717,10 +719,7 @@ def button_handler(update: Update, context: CallbackContext):
 
     # ================= RULES =================
     if query.data == "rules":
-        try:
-            query.message.reply_text(data.get("rules", "tidak ada rules"))
-        except:
-            pass
+        query.message.reply_text(data.get("rules", "tidak ada rules"))
         return
 
     # ================= CEK JOIN =================
@@ -728,10 +727,7 @@ def button_handler(update: Update, context: CallbackContext):
         user_id = query.from_user.id
 
         if is_user_joined(user_id):
-            try:
-                query.message.edit_text("✅ Sudah join, kirim ulang perintah")
-            except:
-                pass
+            query.message.edit_text("✅ Sudah join, kirim ulang perintah")
         else:
             try:
                 query.answer("JOIN DULU WOI 😡", show_alert=True)
@@ -742,7 +738,7 @@ def button_handler(update: Update, context: CallbackContext):
     # ================= STOP MANUAL =================
     if query.data == "manual_stop":
         stop_flag[chat_id] = True
-        return  # 🔥 HARD CUT
+        return  # 🔥 WAJIB
 
     # ================= CLEAR CHAT =================
     if query.data == "manual_clear":
@@ -755,12 +751,13 @@ def button_handler(update: Update, context: CallbackContext):
                 pass
 
         manual_messages[chat_id] = []
-        return  # 🔥 HARD CUT
+        return  # 🔥 WAJIB
 
-    # ================= DURASI BUTTON =================
+    # ================= DURASI =================
     if query.data.startswith("dur_"):
         handle_durasi(update, context)
         return
+
 
 
     # ================= OWNER BUTTON =================
