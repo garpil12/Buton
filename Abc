@@ -358,6 +358,7 @@ def handle_durasi(update, context):
     t.start()
 
 # ================= RUN MANUAL TAGALL =================
+# ================= RUN MANUAL TAGALL =================
 def run_tagall_manual(context, chat_id, msg, mode, duration):
     global stop_flag, manual_messages
 
@@ -400,33 +401,30 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
 
             batch = user_ids[i:i+BATCH_SIZE]
 
+            # 🔥 MENTION (MARKDOWN)
             mention_text = ""
             for uid in batch:
-                name = html.escape(members[uid])
-                mention_text += f'<a href="tg://user?id={uid}">{name}</a> '
+                name = members[uid].replace("[", "").replace("]", "")
+                mention_text += f"[{name}](tg://user?id={uid}) "
 
-            # 🔥 EMOJI
-            emoji_text, entities = build_emoji()
+            # 🔥 EMOJI PREMIUM
+            emoji_text = build_emoji_text()
+            entities = build_emoji_entities()
 
-            # 🔥 BUTTON
-            if btn:
-                keyboard = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(btn["name"], url=btn["link"])]
-                ])
-            else:
-                keyboard = None
+            text_send = f"{msg}\n\n{emoji_text}{mention_text}"
 
             try:
-                text_send = f"{msg}\n\n{emoji_text}{mention_text}"
-
-                sent_msg = context.bot.send_message(
-                    chat_id,
-                    text_send,
-                    parse_mode="HTML",
-                    reply_markup=keyboard
+                # 🔥 KIRIM PAKE TELETHON (WAJIB)
+                sent_msg = loop.run_until_complete(
+                    client.send_message(
+                        chat_id,
+                        text_send,
+                        formatting_entities=entities,
+                        parse_mode="md"
+                    )
                 )
 
-                manual_messages[chat_id].append(sent_msg.message_id)
+                manual_messages[chat_id].append(sent_msg.id)
                 sent += len(batch)
 
             except Exception as e:
@@ -450,7 +448,7 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
                 stopped = True
                 break
 
-            # 🔥 DELAY (BISA DI CANCEL)
+            # 🔥 DELAY (BISA CANCEL)
             for _ in range(int(delay * 10)):
                 if stop_flag.get(chat_id):
                     stopped = True
