@@ -34,38 +34,16 @@ client = TelegramClient("session_new0", api_id, api_hash)
 task_queue = Queue()
 running_task = False  # 🔥 ANTI DOUBLE TASK
 
-# ================= MANUAL TAGALL GLOBAL =================
-manual_setup = {}
-stop_flag = {}
-manual_messages = {}
-custom_buttons = load_partner()  # 🔥 kalau pake JSON
-
-# ================= SETTING =================
-
-
-def load_setting():
-    try:
-        with open(SETTING_FILE, "r") as f:
-            return json.load(f)
-    except BaseException:
-        return {}
-
-
-def save_setting(data):
-    with open(SETTING_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-
 # ================= FILE =================
-
 def load_partner():
     if not os.path.exists(PARTNER_FILE):
-        return []
+        return {}  # 🔥 FIX
     try:
         with open(PARTNER_FILE, "r") as f:
             return json.load(f)
     except Exception as e:
         print("❌ load error:", e)
-        return []
+        return {}  # 🔥 FIX
 
 
 def save_partner(data):
@@ -76,8 +54,8 @@ def save_partner(data):
     except Exception as e:
         print("❌ save error:", e)
 
-# ================= BUTTON FILE =================
 
+# ================= BUTTON FILE =================
 def load_buttons():
     if not os.path.exists(BUTTON_FILE):
         return {}
@@ -96,6 +74,28 @@ def save_buttons(data):
         print("✅ BUTTON KE SAVE:", data)
     except Exception as e:
         print("❌ save button error:", e)
+
+
+# ================= SETTING =================
+def load_setting():
+    try:
+        with open(SETTING_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+
+def save_setting(data):
+    with open(SETTING_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+# ================= GLOBAL =================
+manual_setup = {}
+stop_flag = {}
+manual_messages = {}
+
+custom_buttons = load_partner()  # 🔥 SEKARANG AMAN
 
 # ================= UTIL =================
 
