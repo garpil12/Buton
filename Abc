@@ -192,6 +192,15 @@ def tagall_cmd(update, context):
         reply_markup=keyboard
     )
 
+def cancel_cmd(update, context):
+    if update.effective_user.id not in OWNER_IDS:
+        return
+
+    chat_id = update.effective_chat.id
+    stop_flag[chat_id] = True
+
+    update.message.reply_text("⛔ Tagall dihentikan")
+
 def list_partner(update, context):
     if update.effective_user.id not in OWNER_IDS:
         return
@@ -704,9 +713,15 @@ def button_handler(update: Update, context: CallbackContext):
     global WORKER_ACTIVE
 
     query = update.callback_query
-    query.answer()
-    data = load_setting()
     chat_id = query.message.chat.id
+
+    # 🔥 ANTI ERROR CALLBACK EXPIRED
+    try:
+        query.answer()
+    except:
+        pass
+
+    data = load_setting()
 
     # ================= RULES =================
     if query.data == "rules":
@@ -719,26 +734,40 @@ def button_handler(update: Update, context: CallbackContext):
         if is_user_joined(user_id):
             query.message.edit_text("✅ Sudah join, kirim ulang perintah")
         else:
-            query.answer("JOIN DULU WOI 😡", show_alert=True)
+            try:
+                query.answer("JOIN DULU WOI 😡", show_alert=True)
+            except:
+                pass
 
     # ================= STOP MANUAL =================
     elif query.data == "manual_stop":
         stop_flag[chat_id] = True
-        query.answer("⛔ Dihentikan")
+
+        try:
+            query.answer("⛔ Dihentikan")
+        except:
+            pass
 
     # ================= CLEAR CHAT =================
     elif query.data == "manual_clear":
         msgs = manual_messages.get(chat_id, [])
 
+        deleted = 0
+
         for msg_id in msgs:
             try:
                 context.bot.delete_message(chat_id, msg_id)
-                time.sleep(0.15)
+                deleted += 1
+                time.sleep(0.1)
             except:
                 pass
 
         manual_messages[chat_id] = []
-        query.answer("🧹 Dibersihkan")
+
+        try:
+            query.answer(f"🧹 {deleted} pesan dihapus")
+        except:
+            pass
 
     # ================= DURASI BUTTON =================
     elif query.data.startswith("dur_"):
