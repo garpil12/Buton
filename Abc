@@ -13,7 +13,7 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, CommandHandler, CallbackQueryHandler
 from telethon import TelegramClient
 import database0
-from emoji import build_emoji_text, build_emoji_entities
+from emoji import build_emoji
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -358,9 +358,10 @@ def handle_durasi(update, context):
     t.start()
 
 # ================= RUN MANUAL TAGALL =================
-# ================= RUN MANUAL TAGALL =================
 def run_tagall_manual(context, chat_id, msg, mode, duration):
     global stop_flag, manual_messages
+
+    from emoji import build_emoji
 
     stop_flag[chat_id] = False
     manual_messages[chat_id] = []
@@ -401,30 +402,41 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
 
             batch = user_ids[i:i+BATCH_SIZE]
 
-            # 🔥 MENTION (MARKDOWN)
+            # 🔥 EMOJI RANDOM
+            emoji_text = build_emoji()
+
+            # 🔥 MENTION HTML (BIAR BISA DI KLIK)
             mention_text = ""
             for uid in batch:
-                name = members[uid].replace("[", "").replace("]", "")
-                mention_text += f"[{name}](tg://user?id={uid}) "
+                name = html.escape(members[uid])
+                mention_text += f'<a href="tg://user?id={uid}">{name}</a> '
 
-            # 🔥 EMOJI PREMIUM
-            emoji_text = build_emoji_text()
-            entities = build_emoji_entities()
-
-            text_send = f"{msg}\n\n{emoji_text}{mention_text}"
+            # 🔥 BUTTON
+            if btn:
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(btn["name"], url=btn["link"])]
+                ])
+            else:
+                keyboard = None
 
             try:
-                # 🔥 KIRIM PAKE TELETHON (WAJIB)
-                sent_msg = loop.run_until_complete(
-                    client.send_message(
+                if mode == "reply":
+                    sent_msg = context.bot.send_message(
                         chat_id,
-                        text_send,
-                        formatting_entities=entities,
-                        parse_mode="md"
+                        f"{emoji_text}{mention_text}",
+                        reply_to_message_id=msg.message_id,
+                        parse_mode="HTML",
+                        reply_markup=keyboard
                     )
-                )
+                else:
+                    sent_msg = context.bot.send_message(
+                        chat_id,
+                        f"{msg}\n\n{emoji_text}{mention_text}",
+                        parse_mode="HTML",
+                        reply_markup=keyboard
+                    )
 
-                manual_messages[chat_id].append(sent_msg.id)
+                manual_messages[chat_id].append(sent_msg.message_id)
                 sent += len(batch)
 
             except Exception as e:
@@ -437,18 +449,16 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
                 else:
                     time.sleep(1)
 
-            # 🔥 STOP CEPAT
             if stop_flag.get(chat_id):
                 stopped = True
                 break
 
-            # 🔥 LIMIT
             if sent >= 10000:
                 context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai")
                 stopped = True
                 break
 
-            # 🔥 DELAY (BISA CANCEL)
+            # 🔥 DELAY INTERRUPTIBLE
             for _ in range(int(delay * 10)):
                 if stop_flag.get(chat_id):
                     stopped = True
@@ -471,7 +481,6 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
     else:
         text_done = f"✅ Tagall selesai\n👥 Total tag: {sent}"
 
-    # 🔥 BUTTON AKHIR
     if btn:
         keyboard_clear = InlineKeyboardMarkup([
             [InlineKeyboardButton(btn["name"], url=btn["link"])],
@@ -488,14 +497,13 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
         reply_markup=keyboard_clear
     )
 
+    manual_messages[chat_id].append(done_msg.message_id)
+
     # ================= AUTO CLEAR =================
     def auto_clear():
-        for _ in range(1200):  # 120 detik tapi bisa stop
-            if stop_flag.get(chat_id):
-                break
-            time.sleep(0.1)
+        time.sleep(120)
 
-        msgs = manual_messages.get(chat_id, [])
+        msgs = manual_messages.get(chat_id, []).copy()
 
         for msg_id in msgs:
             try:
@@ -503,14 +511,10 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
             except:
                 pass
 
-        try:
-            context.bot.delete_message(chat_id, done_msg.message_id)
-        except:
-            pass
-
         manual_messages[chat_id] = []
 
     threading.Thread(target=auto_clear, daemon=True).start()
+    
 
 def button_handler(update, context):
     query = update.callback_query
