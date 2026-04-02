@@ -1845,6 +1845,8 @@ def restore_cmd(update, context):
     except Exception as e:
         update.message.reply_text(f"❌ restore gagal\n{e}")
 
+# ================= MAIN =================
+
 def main():
     global bot
 
@@ -1858,6 +1860,9 @@ def main():
     )
 
     bot = updater.bot
+
+    # 🔥 LOAD AUTO TAG DATA
+    load_autotag()
 
     # 🔥 DATABASE
     database0.start_database_system(bot)
@@ -1886,16 +1891,25 @@ def main():
     dp.add_handler(CommandHandler("tagall", tagall_cmd))
     dp.add_handler(CommandHandler("cancel", cancel_cmd))
     dp.add_handler(CommandHandler("addbuttontag", addbuttontag_cmd))
-  
+
+    # 🔥 AUTO TAG (PRIVATE ONLY)
+    dp.add_handler(CommandHandler("autotag", autotag_menu))
+    dp.add_handler(CommandHandler("clearauto", clear_auto))
+    dp.add_handler(CommandHandler("onauto", on_auto))
+    dp.add_handler(CommandHandler("offauto", off_auto))
+
     # ================= CALLBACK =================
-    # 🔥 WAJIB DI ATAS (biar durasi ke detect dulu)
+    # 🔥 MANUAL TAG (WAJIB PALING ATAS)
     dp.add_handler(CallbackQueryHandler(handle_durasi, pattern="^dur_"))
 
-    # 🔥 tombol lain (rules, join, stop, clear, dll)
+    # 🔥 AUTO TAG (WAJIB DI ATAS button_handler)
+    dp.add_handler(CallbackQueryHandler(pilih_jam, pattern="^setjam_"))
+    dp.add_handler(CallbackQueryHandler(pilih_durasi, pattern="^autodur_"))
+
+    # 🔥 tombol lain
     dp.add_handler(CallbackQueryHandler(button_handler))
 
     # ================= PRIVATE =================
-    # 🔥 FIX: biar ga ganggu grup & command
     dp.add_handler(
         MessageHandler(
             Filters.text & Filters.private & ~Filters.command,
@@ -1913,6 +1927,15 @@ def main():
     worker_thread.start()
     print("🔥 WORKER STARTED")
 
+    # ================= AUTO TAG WORKER =================
+    auto_thread = threading.Thread(
+        target=auto_tag_worker,
+        args=(updater.bot,),
+        daemon=True
+    )
+    auto_thread.start()
+    print("⏰ AUTO TAG WORKER STARTED")
+
     # ================= AUTO RESET LIMIT =================
     reset_thread = threading.Thread(target=reset_limit_daily)
     reset_thread.daemon = True
@@ -1926,7 +1949,6 @@ def main():
     )
 
     print("🚀 BOT RUNNING...")
-
     updater.idle()
 
 
