@@ -88,6 +88,20 @@ def save_buttons(data):
     except Exception as e:
         print("❌ save button error:", e)
 
+def load_autotag():
+    global auto_data
+    if not os.path.exists(AUTO_TAG_FILE):
+        auto_data = {}
+        return
+    try:
+        with open(AUTO_TAG_FILE, "r") as f:
+            auto_data = json.load(f)
+    except:
+        auto_data = {}
+
+def save_autotag():
+    with open(AUTO_TAG_FILE, "w") as f:
+        json.dump(auto_data, f, indent=2)
 
 # ================= GLOBAL =================
 manual_setup = {}
