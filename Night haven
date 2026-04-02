@@ -12,7 +12,7 @@ from queue import Queue
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, CommandHandler, CallbackQueryHandler
 from telethon import TelegramClient
-import database0
+import database7
 from emoji import build_emoji
 
 loop = asyncio.new_event_loop()
