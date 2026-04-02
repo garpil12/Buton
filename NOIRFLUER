@@ -1182,13 +1182,13 @@ def start_cmd(update: Update, context: CallbackContext):
 
     # ================= RGB GLITCH =================
     glitch = [
-        "💜 NIGHT HAVEN 💜",
-        "💙 NIGHT HAVEN 💙",
-        "💚 NIGHT HAVEN 💚",
-        "💛 NIGHT HAVEN 💛",
-        "🧡 NIGHT HAVEN 🧡",
-        "❤️ NIGHT HAVEN ❤️"
-    ]
+        "💜 𝑵𝑶𝑰𝑹𝑭𝑳𝑼𝑬𝑹 💜",
+        "💙 𝗡𝗢𝗜𝗥𝗙𝗟𝗨𝗘𝗥 💙",
+        "💚 𝙉𝙊𝙄𝙍𝙁𝙇𝙐𝙀𝙍 💚",
+        "💛 𝐍𝐎𝐈𝐑𝐅𝐋𝐔𝐄𝐑 💛",
+        "🧡 𝒩𝒪ℐℛ𝒻𝓁𝓊ℯ𝓇 🧡",
+        "❤️ ＮＯＩＲＦＬＵＥＲ ❤️"
+]
 
     for g in glitch:
         time.sleep(0.12)
@@ -1231,7 +1231,7 @@ def start_cmd(update: Update, context: CallbackContext):
 
     # ================= FINAL TEXT (FIX CLEAN) =================
     text = (
-        "𓊆 ✨  𝐖𝐄𝐋𝐂𝐎𝐌𝐄 𝐓𝐎 𝗕𝗢𝗧 𝗡𝗜𝗚𝗛𝗧 𝗛𝗔𝗩𝗘𝗡 ✨ 𓊇 \n\n"
+        "𓊆 ✨  𝐖𝐄𝐋𝐂𝐎𝐌𝐄 𝐓𝐎 𝗕𝗢𝗧 𝙉𝙊𝙄𝙍𝙁𝙇𝙐𝙀𝙍 ✨ 𓊇 \n\n"
 
         "╭───────────────╮\n"
         "│ ٬٬ ࣪ ، 𒀭 bot tag all dengan sistem otomatis.\n"
@@ -1680,7 +1680,7 @@ def tagall_worker():
                 "🚀 𝐓𝐀𝐆𝐀𝐋𝐋 𝐃𝐈𝐌𝐔𝐋𝐀𝐈\n\n"
                 f"🔗 partner : {partner_link}\n"
                 "⏰    durasi : 5 menit\n"
-                "📍 JIKA BOT EROR SILAHKAN KESINI @TAGallnigth_bot"
+                "📍 JIKA BOT EROR SILAHKAN KESINI @tagallnoirfluerBot"
             )
 
             keyboard_start = InlineKeyboardMarkup([
