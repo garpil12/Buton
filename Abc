@@ -159,25 +159,44 @@ def get_group_name(link):
 
 
 # ================= COMMAND =================
-
 def add_partner(update, context):
     if update.effective_user.id not in OWNER_IDS:
         return
 
-    try:
-        link = context.args[0]
-    except BaseException:
-        update.message.reply_text("❌   format: /addpartner link")
+    if not context.args:
+        update.message.reply_text("❌ format: /addpartner link")
         return
 
-    username = normalize_link(link)
+    link = context.args[0]
     data = load_partner()
 
+    # ================= CEK DUPLIKAT =================
     for p in data:
-        if p["username"] == username:
+        if link in p.get("link", ""):
             update.message.reply_text("⚠️ sudah ada")
             return
 
+    # ================= PRIVATE LINK =================
+    if "t.me/+" in link or "joinchat" in link:
+        try:
+            name = get_group_name(link)
+
+            data.append({
+                "link": link,  # ✅ simpan apa adanya (JANGAN diubah)
+                "username": "private",
+                "name": name
+            })
+
+            save_partner(data)
+            update.message.reply_text(f"✅ Partner private ditambah:\n{name}")
+
+        except Exception as e:
+            update.message.reply_text(f"❌ Gagal add private\n{e}")
+
+        return
+
+    # ================= PUBLIC LINK =================
+    username = normalize_link(link)
     name = get_group_name(link)
 
     data.append({
@@ -189,24 +208,27 @@ def add_partner(update, context):
     save_partner(data)
     update.message.reply_text(f"✅ Partner ditambah:\n{name}")
 
-
 def del_partner(update, context):
     if update.effective_user.id not in OWNER_IDS:
         return
 
-    try:
-        link = context.args[0]
-    except BaseException:
-        update.message.reply_text("❌   format: /delpartner link")
+    if not context.args:
+        update.message.reply_text("❌ format: /delpartner link")
         return
 
-    username = normalize_link(link)
+    link = context.args[0]
     data = load_partner()
 
-    new_data = [p for p in data if p["username"] != username]
+    new_data = []
+
+    for p in data:
+        if link in p.get("link", ""):
+            continue
+        new_data.append(p)
 
     save_partner(new_data)
-    update.message.reply_text("✅   Partner dihapus")
+    update.message.reply_text("✅ Partner dihapus")
+
 
 def tagall_cmd(update, context):
     chat = update.effective_chat
@@ -297,14 +319,14 @@ def list_partner(update, context):
     data = load_partner()
 
     if not data:
-        update.message.reply_text("❌   kosong")
+        update.message.reply_text("❌ kosong")
         return
 
     text = "📋 𝐋𝐈𝐒𝐓 𝐏𝐀𝐑𝐓𝐍𝐄𝐑\n\n"
 
     for i, p in enumerate(data, 1):
-        text += f"〔{i}〕 {p['name']}\n"
-        text += f"🔗 {p['link']}\n\n"
+        text += f"〔{i}〕 {p.get('name','-')}\n"
+        text += f"🔗 {p.get('link','-')}\n\n"
 
     update.message.reply_text(text)
 
