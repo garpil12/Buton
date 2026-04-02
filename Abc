@@ -1798,12 +1798,10 @@ def handle_private(update: Update, context: CallbackContext):
 
     # ================= FILTER AWAL =================
 
-    # ❌ TAGALL OFF
     if not WORKER_ACTIVE:
         msg.reply_text("❌ Maaf, tagall sedang OFF")
         return
 
-    # ❌ CEK HARUS ADA TEXT
     if not text:
         return
 
@@ -1816,19 +1814,34 @@ def handle_private(update: Update, context: CallbackContext):
 
     data = load_partner()
 
-    valid = any(normalize_link(l) == p["username"]
-                for l in links for p in data)
+    # 🔥 FIX VALIDASI (AMAN + SUPPORT PRIVATE & PUBLIC)
+    valid = any(
+        isinstance(p, dict) and (
+            normalize_link(l) == p.get("username") or
+            l in p.get("link", "")
+        )
+        for l in links for p in data
+    )
 
     if not valid:
         msg.reply_text("❌ Link tidak terdaftar partner")
         return
 
-    # ================= CEK LIMIT (🔥 FIX UTAMA) =================
+    # ================= CEK LIMIT =================
     limit_data = load_limit()
     today = get_today_wib()
 
     partner_link = links[0]
-    partner_key = normalize_link(partner_link)
+
+    # 🔥 FIX KEY (AMAN UNTUK PRIVATE & PUBLIC)
+    partner_key = next(
+        (
+            p.get("username")
+            for p in data
+            if partner_link in p.get("link", "")
+        ),
+        normalize_link(partner_link)
+    )
 
     if limit_data.get(partner_key) == today:
         msg.reply_text("❌ Group ini sudah request tagall hari ini")
@@ -1875,6 +1888,7 @@ def handle_private(update: Update, context: CallbackContext):
     # ================= START WORKER =================
     if not running_task:
         threading.Thread(target=tagall_worker, daemon=True).start()
+
 
 # ================= MAIN =================
 
