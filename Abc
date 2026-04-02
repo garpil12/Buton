@@ -30,6 +30,7 @@ SETTING_FILE = "setting.json0"
 BUTTON_FILE = "buttons.json0"
 AUTO_TAG_FILE = "autotag.json"
 LOG_CHAT_ID = -1003812690414
+QUEUE_FILE = "queue.json"
 
 api_id = 33370509
 api_hash = "669af6caebf2aca264b16cf8b40d37b2"
@@ -444,7 +445,6 @@ def autotag_menu(update: Update, context: CallbackContext):
 
     msg = " ".join(context.args)
 
-    # 🔥 FIX: kalau belum ada, bikin data baru
     if user_id not in auto_data:
         auto_data[user_id] = {}
 
@@ -453,12 +453,13 @@ def autotag_menu(update: Update, context: CallbackContext):
         "hour": None,
         "minute": 0,
         "duration": 60,
-        "active": False
+        "active": False,
+        "last_run": None,
+        "chat_id": update.effective_chat.id
     })
 
     save_autotag()
 
-    # 🔥 BUTTON JAM
     buttons, row = [], []
     for i in range(24):
         row.append(InlineKeyboardButton(f"{i:02d}:00", callback_data=f"setjam_{i}"))
@@ -577,59 +578,106 @@ def clearauto(update, context):
 
 def auto_tag_worker(context):
     while True:
-        now = time.localtime()
+        try:
+            now = time.localtime()
+            tanggal = time.strftime("%d-%m-%Y")
 
-        for user_id, data in auto_data.items():
+            for user_id, data in list(auto_data.items()):
 
-            if not data.get("active"):
-                continue
-
-            if now.tm_hour == data["hour"] and now.tm_min == data["minute"]:
-
-                target_chat = int(data.get("chat_id", user_id))
-
-                # 🔥 FORMAT TANGGAL
-                tanggal = time.strftime("%d-%m-%Y")
-
-                # 🔥 BUAT LINK GROUP (kalau -100)
                 try:
-                    link = f"https://t.me/c/{str(target_chat)[4:]}"
-                except:
-                    link = "private"
+                    if not data.get("active"):
+                        continue
 
-                # 🔥 LOG KE GROUP
-                try:
-                    context.bot.send_message(
-                        LOG_CHAT_ID,
-                        f"🚀 AUTO TAG JALAN\n\n"
-                        f"📅 Tanggal: {tanggal}\n"
-                        f"👤 User: {user_id}\n"
-                        f"🎯 Target: {target_chat}\n"
-                        f"🔗 Link: {link}\n"
-                        f"🕒 Jam: {data['hour']:02d}:{data['minute']:02d}"
-                    )
+                    if data.get("hour") is None:
+                        continue
+
+                    if now.tm_hour != data["hour"] or now.tm_min != data["minute"]:
+                        continue
+
+                    target_chat = int(data.get("chat_id", user_id))
+                    text = data.get("text", "AUTO TAGALL")
+
+                    # 🔥 ANTI DUPLICATE
+                    msg_key = f"{target_chat}_{text}_{tanggal}"
+                    if msg_key in recent_messages:
+                        continue
+                    recent_messages.add(msg_key)
+
+                    # 🔥 RATE LIMIT PER CHAT
+                    if rate_limit.get(target_chat, 0) > 5:
+                        continue
+
+                    # 🔥 LOG (SAFE)
+                    try:
+                        context.bot.send_message(
+                            LOG_CHAT_ID,
+                            f"🚀 AUTO TAG JALAN\n\n"
+                            f"📅 {tanggal}\n"
+                            f"👤 {user_id}\n"
+                            f"🎯 {target_chat}\n"
+                            f"🕒 {data['hour']:02d}:{data['minute']:02d}"
+                        )
+                    except Exception as e:
+                        print("LOG ERROR:", e)
+
+                    # 🔥 SMART RETRY
+                    for attempt in range(5):
+                        try:
+                            delay = random.uniform(2, 5) + (attempt * random.uniform(1, 3))
+                            time.sleep(delay)
+
+                            duration = data.get("duration", 60) * 60
+
+                            run_tagall_manual(
+                                context,
+                                target_chat,
+                                text,
+                                "normal",
+                                duration
+                            )
+
+                            # turunin limit kalau sukses
+                            rate_limit[target_chat] = max(0, rate_limit.get(target_chat, 0) - 1)
+
+                            break
+
+                        except Exception as e:
+                            print(f"[RETRY {attempt+1}] ERROR:", e)
+
+                            # 🔥 DETECT FLOOD
+                            if "Too Many Requests" in str(e):
+                                rate_limit[target_chat] = rate_limit.get(target_chat, 0) + 1
+                                time.sleep(random.uniform(5, 10))
+
+                            # ❌ FAIL TOTAL
+                            if attempt == 4:
+                                print("❌ GAGAL TOTAL:", target_chat)
+
+                    # 🔥 MARK SUDAH JALAN
+                    auto_data[user_id]["last_run"] = tanggal
+
+                    try:
+                        save_autotag()
+                    except Exception as e:
+                        print("SAVE ERROR:", e)
+
                 except Exception as e:
-                    print("LOG ERROR:", e)
+                    print("USER LOOP ERROR:", e)
 
-                # 🔥 JALANKAN TAGALL
-                try:
-                    duration = data.get("duration")
-                    if duration:
-                        duration = duration * 60
+            # 🔥 AUTO CLEAR
+            if len(recent_messages) > 500:
+                recent_messages.clear()
 
-                    run_tagall_manual(
-                        context,
-                        target_chat,
-                        data.get("text", "AUTO TAGALL"),
-                        "normal",
-                        duration
-                    )
-                except Exception as e:
-                    print("AUTO TAG ERROR:", e)
+            # 🔥 CLEAN RATE LIMIT
+            for chat in list(rate_limit.keys()):
+                if time.time() - last_activity.get(chat, 0) > 60:
+                    rate_limit[chat] = 0
 
-                time.sleep(60)  # anti spam trigger
+        except Exception as e:
+            print("WORKER FATAL ERROR:", e)
 
-        time.sleep(10)
+        # 🔥 FIXED SLEEP (ANTI CPU SPAM)
+        time.sleep(5)
 
 # ================= HANDLE DURASI =================
 def handle_durasi(update, context):
