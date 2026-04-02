@@ -13,7 +13,7 @@ from queue import Queue
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, CommandHandler, CallbackQueryHandler
 from telethon import TelegramClient
-import database5
+import database9
 from emoji import build_emoji
 
 loop = asyncio.new_event_loop()
@@ -1272,7 +1272,7 @@ def start_cmd(update: Update, context: CallbackContext):
         pass
 
     # ================= FOTO SYSTEM =================
-    photo_path = "database5/start.jpg"
+    photo_path = "database9/start.jpg"
 
     if data.get("start_pict"):
         context.bot.send_photo(
@@ -1531,7 +1531,7 @@ def get_members(chat_id):
 
 
 # ================= LIMIT GC =================
-LIMIT_FILE = "limit_gc.json7"
+LIMIT_FILE = "limit_gc.json5"
 
 from datetime import datetime, timedelta, timezone
 
@@ -2023,8 +2023,8 @@ def restore_cmd(update, context):
                     backup.write("partner.json9")
                 if os.path.exists("setting.json5"):
                     backup.write("setting.json5")
-                if os.path.exists("database5"):
-                    for root, dirs, files2 in os.walk("database5"):
+                if os.path.exists("database9"):
+                    for root, dirs, files2 in os.walk("database9"):
                         for f in files2:
                             backup.write(os.path.join(root, f))
 
@@ -2060,7 +2060,7 @@ def main():
     load_autotag()
 
     # 🔥 DATABASE
-    database5.start_database_system(bot)
+    database9.start_database_system(bot)
 
     dp = updater.dispatcher
 
