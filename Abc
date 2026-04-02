@@ -420,6 +420,37 @@ def pilih_jam(update: Update, context: CallbackContext):
         reply_markup=keyboard
     )
 
+def pilih_durasi(update: Update, context: CallbackContext):
+    query = update.callback_query
+
+    try:
+        query.answer()
+    except:
+        pass
+
+    if query.from_user.id not in OWNER_IDS:
+        return
+
+    user_id = str(query.from_user.id)
+
+    if user_id not in auto_data:
+        query.edit_message_text("❌ Session hilang")
+        return
+
+    dur = int(query.data.split("_")[1])
+
+    auto_data[user_id]["duration"] = dur
+    auto_data[user_id]["active"] = True
+
+    save_autotag()
+
+    query.edit_message_text(
+        f"🚀 AUTO TAG AKTIF\n\n"
+        f"🕒 Jam: {auto_data[user_id]['hour']:02d}:00\n"
+        f"⏱ Durasi: {dur} menit\n\n"
+        f"Bot jalan tiap hari otomatis."
+    )
+
 # ================= HANDLE DURASI =================
 def handle_durasi(update, context):
     query = update.callback_query
