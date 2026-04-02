@@ -225,6 +225,16 @@ def tagall_cmd(update, context):
     except:
         return
 
+    # 🔥 TAMBAHAN INI (WAJIB)
+    user_id = str(update.effective_user.id)
+
+    if user_id not in auto_data:
+        auto_data[user_id] = {}
+
+    auto_data[user_id]["chat_id"] = chat.id
+    save_autotag()
+
+    # ================= LANJUT KODE LU =================
     text = " ".join(context.args)
 
     if text:
