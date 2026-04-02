@@ -391,6 +391,35 @@ def autotag_menu(update: Update, context: CallbackContext):
 
     update.message.reply_text(text, reply_markup=keyboard)
 
+def pilih_jam(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
+
+    if query.from_user.id not in OWNER_IDS:
+        return
+
+    user_id = str(query.from_user.id)
+
+    if user_id not in auto_data:
+        query.edit_message_text("❌ Session hilang")
+        return
+
+    jam = int(query.data.split("_")[1])
+
+    auto_data[user_id]["hour"] = jam
+    save_autotag()
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("⏱ 30 MENIT", callback_data="autodur_30")],
+        [InlineKeyboardButton("⏱ 60 MENIT", callback_data="autodur_60")],
+        [InlineKeyboardButton("⏱ 120 MENIT", callback_data="autodur_120")]
+    ])
+
+    query.edit_message_text(
+        f"✅ JAM: {jam:02d}:00\n\nPilih durasi:",
+        reply_markup=keyboard
+    )
+
 # ================= HANDLE DURASI =================
 def handle_durasi(update, context):
     query = update.callback_query
