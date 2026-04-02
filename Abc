@@ -470,21 +470,37 @@ def pilih_durasi(update: Update, context: CallbackContext):
 
 def onauto(update, context):
     user_id = str(update.effective_user.id)
+
+    if user_id not in auto_data:
+        update.message.reply_text("❌ Belum ada setting auto tag")
+        return
+
     auto_data[user_id]["active"] = True
     save_autotag()
-    update.message.reply_text("✅ AUTO ON")
+    update.message.reply_text("🟢 AUTO TAG AKTIF")
+
 
 def offauto(update, context):
     user_id = str(update.effective_user.id)
+
+    if user_id not in auto_data:
+        update.message.reply_text("❌ Belum ada setting auto tag")
+        return
+
     auto_data[user_id]["active"] = False
     save_autotag()
-    update.message.reply_text("⛔ AUTO OFF")
+    update.message.reply_text("🔴 AUTO TAG DIMATIKAN")
+
 
 def clearauto(update, context):
     user_id = str(update.effective_user.id)
-    auto_data.pop(user_id, None)
-    save_autotag()
-    update.message.reply_text("🧹 DATA AUTO DIHAPUS")
+
+    if user_id in auto_data:
+        auto_data.pop(user_id)
+        save_autotag()
+        update.message.reply_text("🧹 DATA AUTO DIHAPUS")
+    else:
+        update.message.reply_text("❌ Tidak ada data auto")
 
 def auto_tag_worker(context):
     while True:
@@ -1894,7 +1910,7 @@ def main():
 
     # 🔥 AUTO TAG (PRIVATE ONLY)
     dp.add_handler(CommandHandler("autotag", autotag_menu))
-    dp.add_handler(CommandHandler("clearauto", clear_auto))
+    dp.add_handler(CommandHandler("clearauto", clearauto))
     dp.add_handler(CommandHandler("onauto", on_auto))
     dp.add_handler(CommandHandler("offauto", off_auto))
 
