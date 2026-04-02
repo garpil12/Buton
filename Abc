@@ -54,22 +54,41 @@ def save_setting(data):
 # ================= FILE (JANGAN DIUBAH) =================
 def load_partner():
     if not os.path.exists(PARTNER_FILE):
-        return []  # 🔥 BALIK KE SEMULA (LIST)
+        return []
+
     try:
         with open(PARTNER_FILE, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+
+        # 🔥 pastikan list
+        if not isinstance(data, list):
+            return []
+
+        # 🔥 filter hanya data valid (dict)
+        clean_data = []
+        for p in data:
+            if isinstance(p, dict):
+                clean_data.append(p)
+
+        return clean_data
+
     except Exception as e:
         print("❌ load error:", e)
         return []
 
+
 def save_partner(data):
     try:
+        # 🔥 hanya simpan yang valid
+        clean_data = [p for p in data if isinstance(p, dict)]
+
         with open(PARTNER_FILE, "w") as f:
-            json.dump(data, f, indent=2)
-        print("✅ KE SAVE:", data)
+            json.dump(clean_data, f, indent=2)
+
+        print("✅ KE SAVE:", clean_data)
+
     except Exception as e:
         print("❌ save error:", e)
-
 
 # ================= BUTTON FILE (BARU) =================
 def load_buttons():
