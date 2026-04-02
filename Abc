@@ -1199,7 +1199,7 @@ def button_handler(update: Update, context: CallbackContext):
             return
 
         stop_flag[chat_id] = True
-        manual_setup.pop(chat_id, None)  # 🔥 bersihin session
+        manual_setup.pop(chat_id, None)
         return
 
     # ================= CLEAR CHAT =================
@@ -1226,6 +1226,19 @@ def button_handler(update: Update, context: CallbackContext):
     # ================= DURASI =================
     if query.data.startswith("dur_"):
         handle_durasi(update, context)
+        return
+
+    # ================= AUTO TAG BUTTON =================
+    elif query.data == "cmd_autotag":
+        context.bot.send_message(
+            chat_id=query.from_user.id,
+            text=(
+                "🤖 AUTO TAG SETTING\n\n"
+                "Gunakan di private chat:\n"
+                "/autotag pesan\n\n"
+                "Contoh:\n/autotag WOY LINK GACOR"
+            )
+        )
         return
 
     # ================= OWNER BUTTON =================
@@ -1311,6 +1324,7 @@ def button_handler(update: Update, context: CallbackContext):
         if query.from_user.id not in OWNER_IDS:
             return
 
+        global WORKER_ACTIVE
         WORKER_ACTIVE = True
 
         context.bot.send_message(
@@ -1322,6 +1336,7 @@ def button_handler(update: Update, context: CallbackContext):
         if query.from_user.id not in OWNER_IDS:
             return
 
+        global WORKER_ACTIVE
         WORKER_ACTIVE = False
 
         context.bot.send_message(
@@ -1329,7 +1344,7 @@ def button_handler(update: Update, context: CallbackContext):
             text="🔴 Tagall berhasil dimatikan"
         )
 
-    # 🔥 TAMBAHAN BROADCAST (TIDAK MENGUBAH YANG LAIN)
+    # ================= BROADCAST =================
     elif query.data == "cmd_bc":
         if query.from_user.id not in OWNER_IDS:
             return
@@ -1338,7 +1353,7 @@ def button_handler(update: Update, context: CallbackContext):
             chat_id=query.from_user.id,
             text="📢 Kirim broadcast pakai:\n/bc pesan"
         )
-        
+       
 # ================= TELETHON =================
 
 
