@@ -1911,9 +1911,8 @@ def main():
     # 🔥 AUTO TAG (PRIVATE ONLY)
     dp.add_handler(CommandHandler("autotag", autotag_menu))
     dp.add_handler(CommandHandler("clearauto", clearauto))
-    dp.add_handler(CommandHandler("onauto", on_auto))
-    dp.add_handler(CommandHandler("offauto", off_auto))
-
+    dp.add_handler(CommandHandler("onauto", onauto))
+    dp.add_handler(CommandHandler("offauto", offauto))
     # ================= CALLBACK =================
     # 🔥 MANUAL TAG (WAJIB PALING ATAS)
     dp.add_handler(CallbackQueryHandler(handle_durasi, pattern="^dur_"))
