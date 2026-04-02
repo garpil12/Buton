@@ -135,6 +135,28 @@ def save_last_group(update, context):
         auto_data[user_id]["chat_id"] = chat_id
         save_autotag()
 
+# ================= PERSISTENT QUEUE =================
+def save_queue():
+    try:
+        data = []
+        while not task_queue.empty():
+            data.append(task_queue.get())
+        with open(QUEUE_FILE, "w") as f:
+            json.dump(data, f)
+        for item in data:
+            task_queue.put(item)
+    except:
+        pass
+
+def load_queue():
+    try:
+        with open(QUEUE_FILE, "r") as f:
+            data = json.load(f)
+            for item in data:
+                task_queue.put(tuple(item))
+    except:
+        pass
+
 # ================= GLOBAL =================
 manual_setup = {}
 stop_flag = {}
