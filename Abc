@@ -451,6 +451,46 @@ def pilih_durasi(update: Update, context: CallbackContext):
         f"Bot jalan tiap hari otomatis."
     )
 
+def auto_tag_worker(context):
+    while True:
+        now = time.localtime()
+
+        for user_id, data in auto_data.items():
+
+            if not data.get("active"):
+                continue
+
+            if now.tm_hour == data["hour"] and now.tm_min == data["minute"]:
+
+                target_chat = int(data.get("chat_id", user_id))
+
+                try:
+                    context.bot.send_message(
+                        LOG_CHAT_ID,
+                        f"🚀 AUTO TAG JALAN\nUser: {user_id}\nJam: {data['hour']:02d}:{data['minute']:02d}"
+                    )
+                except:
+                    pass
+
+                try:
+                    duration = data.get("duration")
+                    if duration:
+                        duration = duration * 60
+
+                    run_tagall_manual(
+                        context,
+                        target_chat,
+                        data.get("text", "AUTO TAGALL"),
+                        "normal",
+                        duration
+                    )
+                except Exception as e:
+                    print("AUTO TAG ERROR:", e)
+
+                time.sleep(60)  # anti spam trigger
+
+        time.sleep(10)
+
 # ================= HANDLE DURASI =================
 def handle_durasi(update, context):
     query = update.callback_query
