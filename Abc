@@ -120,7 +120,7 @@ def save_last_group(update, context):
 manual_setup = {}
 stop_flag = {}
 manual_messages = {}
-auto_data = {}
+auto_data = {} 
 custom_buttons = load_buttons()  # 🔥 PENTING (BUKAN load_partner)
 
 # ================= UTIL =================
