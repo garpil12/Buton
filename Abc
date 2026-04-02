@@ -28,6 +28,7 @@ OWNER_IDS = [8209644174, 5674665043]
 PARTNER_FILE = "partner.json0"
 SETTING_FILE = "setting.json0"
 BUTTON_FILE = "buttons.json0"
+AUTO_TAG_FILE = "autotag.json"
 
 api_id = 33370509
 api_hash = "669af6caebf2aca264b16cf8b40d37b2"
