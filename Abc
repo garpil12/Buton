@@ -856,6 +856,12 @@ def help_owner(update: Update, context: CallbackContext):
         "➜ /tagall pesan\n"
         "➜ /addbuttontag nama|link\n\n"
 
+        "🤖 𝗔𝗨𝗧𝗢 𝗧𝗔𝗚\n"
+        "➜ /autotag pesan\n"
+        "➜ /onauto\n"
+        "➜ /offauto\n"
+        "➜ /clearauto\n\n"
+
         "⚙️ 𝗦𝗜𝗦𝗧𝗘𝗠\n"
         "➜ /on   (aktifkan)\n"
         "➜ /off  (matikan)\n\n"
@@ -881,6 +887,9 @@ def help_owner(update: Update, context: CallbackContext):
         ],
         [
             InlineKeyboardButton("🏷️ Tagall", callback_data="cmd_tagall")
+        ],
+        [
+            InlineKeyboardButton("🤖 AutoTag", callback_data="cmd_autotag")
         ],
         [
             InlineKeyboardButton("🟢 ON", callback_data="cmd_on"),
