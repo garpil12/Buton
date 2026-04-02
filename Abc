@@ -468,6 +468,24 @@ def pilih_durasi(update: Update, context: CallbackContext):
         f"Bot jalan tiap hari otomatis."
     )
 
+def onauto(update, context):
+    user_id = str(update.effective_user.id)
+    auto_data[user_id]["active"] = True
+    save_autotag()
+    update.message.reply_text("✅ AUTO ON")
+
+def offauto(update, context):
+    user_id = str(update.effective_user.id)
+    auto_data[user_id]["active"] = False
+    save_autotag()
+    update.message.reply_text("⛔ AUTO OFF")
+
+def clearauto(update, context):
+    user_id = str(update.effective_user.id)
+    auto_data.pop(user_id, None)
+    save_autotag()
+    update.message.reply_text("🧹 DATA AUTO DIHAPUS")
+
 def auto_tag_worker(context):
     while True:
         now = time.localtime()
@@ -481,14 +499,30 @@ def auto_tag_worker(context):
 
                 target_chat = int(data.get("chat_id", user_id))
 
+                # 🔥 FORMAT TANGGAL
+                tanggal = time.strftime("%d-%m-%Y")
+
+                # 🔥 BUAT LINK GROUP (kalau -100)
+                try:
+                    link = f"https://t.me/c/{str(target_chat)[4:]}"
+                except:
+                    link = "private"
+
+                # 🔥 LOG KE GROUP
                 try:
                     context.bot.send_message(
                         LOG_CHAT_ID,
-                        f"🚀 AUTO TAG JALAN\nUser: {user_id}\nJam: {data['hour']:02d}:{data['minute']:02d}"
+                        f"🚀 AUTO TAG JALAN\n\n"
+                        f"📅 Tanggal: {tanggal}\n"
+                        f"👤 User: {user_id}\n"
+                        f"🎯 Target: {target_chat}\n"
+                        f"🔗 Link: {link}\n"
+                        f"🕒 Jam: {data['hour']:02d}:{data['minute']:02d}"
                     )
-                except:
-                    pass
+                except Exception as e:
+                    print("LOG ERROR:", e)
 
+                # 🔥 JALANKAN TAGALL
                 try:
                     duration = data.get("duration")
                     if duration:
