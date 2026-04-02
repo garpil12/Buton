@@ -343,6 +343,54 @@ def fancy_name(text):
     normal, fancy = random.choice(fonts)
     return text.translate(str.maketrans(normal, fancy))
 
+def autotag_menu(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+
+    if user_id not in OWNER_IDS:
+        return
+
+    # 🔥 WAJIB PRIVATE
+    if update.effective_chat.type != "private":
+        update.message.reply_text("❌ Gunakan di private chat bot")
+        return
+
+    if not context.args:
+        update.message.reply_text("❌ Contoh:\n/autotag pesan lu")
+        return
+
+    msg = " ".join(context.args)
+    chat_id = str(user_id)  # 🔥 disimpan per user
+
+    auto_data[chat_id] = {
+        "text": msg,
+        "hour": None,
+        "minute": 0,
+        "duration": 60,
+        "active": False
+    }
+
+    save_autotag()
+
+    text = "🕒 PILIH JAM AUTO TAGALL"
+
+    buttons = []
+    row = []
+
+    for i in range(24):
+        jam = f"{i:02d}:00"
+        row.append(InlineKeyboardButton(jam, callback_data=f"setjam_{i}"))
+
+        if len(row) == 4:
+            buttons.append(row)
+            row = []
+
+    if row:
+        buttons.append(row)
+
+    keyboard = InlineKeyboardMarkup(buttons)
+
+    update.message.reply_text(text, reply_markup=keyboard)
+
 # ================= HANDLE DURASI =================
 def handle_durasi(update, context):
     query = update.callback_query
