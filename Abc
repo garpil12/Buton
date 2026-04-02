@@ -1164,6 +1164,8 @@ def start_cmd(update: Update, context: CallbackContext):
 
 # ================= CALLBACK =================
 def button_handler(update: Update, context: CallbackContext):
+    global WORKER_ACTIVE  # 🔥 WAJIB DI ATAS
+
     query = update.callback_query
     chat_id = query.message.chat.id
     user_id = query.from_user.id
@@ -1324,7 +1326,6 @@ def button_handler(update: Update, context: CallbackContext):
         if query.from_user.id not in OWNER_IDS:
             return
 
-        global WORKER_ACTIVE
         WORKER_ACTIVE = True
 
         context.bot.send_message(
@@ -1336,7 +1337,6 @@ def button_handler(update: Update, context: CallbackContext):
         if query.from_user.id not in OWNER_IDS:
             return
 
-        global WORKER_ACTIVE
         WORKER_ACTIVE = False
 
         context.bot.send_message(
@@ -1353,7 +1353,7 @@ def button_handler(update: Update, context: CallbackContext):
             chat_id=query.from_user.id,
             text="📢 Kirim broadcast pakai:\n/bc pesan"
         )
-       
+     
 # ================= TELETHON =================
 
 
