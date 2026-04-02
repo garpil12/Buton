@@ -371,9 +371,9 @@ def autotag_menu(update: Update, context: CallbackContext):
 
     msg = " ".join(context.args)
 
-    if user_id not in auto_data or "chat_id" not in auto_data[user_id]:
-        update.message.reply_text("❌ Lu belum pake bot di grup")
-        return
+    # 🔥 FIX: kalau belum ada, bikin data baru
+    if user_id not in auto_data:
+        auto_data[user_id] = {}
 
     auto_data[user_id].update({
         "text": msg,
@@ -1905,7 +1905,7 @@ def main():
 
     # 🔥 TAGALL (MANUAL)
     dp.add_handler(CommandHandler("tagall", tagall_cmd))
-    dp.add_handler(CommandHandler("cancel", cancel_cmd))
+    dp.add_handler(CommandHandler("cancel", cancel_cmd)) 
     dp.add_handler(CommandHandler("addbuttontag", addbuttontag_cmd))
 
     # 🔥 AUTO TAG (PRIVATE ONLY)
