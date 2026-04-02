@@ -19,21 +19,22 @@ from emoji import build_emoji
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-TOKEN = "8621144366:AAEKUauKyBSBZfY-cvWmOgEYn9ad0ULQy2U"
+TOKEN = "8685315507:AAEc6ybSHdpZSap5mBTvEiHX4e-o8NVnSvg"
 API_URL = "http://127.0.0.1:5000/get"
-TARGET_CHATS = [-1002208118831]
-FORCE_GROUP = -1002208118831   # 🔥 WAJIB (buat cek join)
-FORCE_LINK = "https://t.me/ZonaNight_Haven"
-OWNER_IDS = [8209644174, 6479082885, 6220828950]
-PARTNER_FILE = "partner.json22"
-SETTING_FILE = "setting.json7"
-QUEUE_FILE = "queue.json7"
-AUTO_TAG_FILE = "autotag.json7"
-BUTTON_FILE = "buttons.json7"
+TARGET_CHATS = [-1002896045673]
+FORCE_GROUP = -1002896045673   # 🔥 WAJIB (buat cek join)
+FORCE_LINK = "https://t.me/ofcnoirfleur"
+OWNER_IDS = [8209644174, 5744453710]
+PARTNER_FILE = "partner.json9"
+SETTING_FILE = "setting.json5"
+SETTING_FILE = "setting.json5"
+QUEUE_FILE = "queue.json5"
+AUTO_TAG_FILE = "autotag.json5"
+BUTTON_FILE = "buttons.json5"
 
 api_id = 33370509
 api_hash = "669af6caebf2aca264b16cf8b40d37b2"
-client = TelegramClient("session_new7", api_id, api_hash)
+client = TelegramClient("session_new8", api_id, api_hash)
 
 task_queue = Queue()
 running_task = False  # 🔥 ANTI DOUBLE TASK
@@ -1271,7 +1272,7 @@ def start_cmd(update: Update, context: CallbackContext):
         pass
 
     # ================= FOTO SYSTEM =================
-    photo_path = "database7/start.jpg"
+    photo_path = "database5/start.jpg"
 
     if data.get("start_pict"):
         context.bot.send_photo(
@@ -1736,7 +1737,7 @@ def tagall_worker():
                         try:
                             msg = bot.send_message(
                                 chat_id,
-                                f" 💕 𝑩𝑶𝑻 𝑻𝑨𝑮𝑨𝑳𝑳 𝑵𝑰𝑮𝑯𝑻 𝑯𝑨𝑽𝑬𝑵 💖\n\n{text}\n\n{mention_text}",
+                                f" 💕 𝑩𝑶𝑻 𝑻𝑨𝑮𝑨𝑳𝑳 𝙉𝙊𝙄𝙍𝙁𝙇𝙐𝙀𝙍 💖\n\n{text}\n\n{mention_text}",
                                 parse_mode="HTML",
                                 timeout=10
                             )
@@ -2008,8 +2009,8 @@ def restore_cmd(update, context):
             files = z.namelist()
 
             # ================= VALIDASI ISI =================
-            valid = any("partner.json7" in f for f in files) or \
-                    any("setting.json7" in f for f in files)
+            valid = any("partner.json5" in f for f in files) or \
+                    any("setting.json5" in f for f in files)
 
             if not valid:
                 update.message.reply_text("❌ isi zip tidak valid")
@@ -2018,11 +2019,11 @@ def restore_cmd(update, context):
             # ================= BACKUP LAMA =================
             backup_name = f"backup_before_restore_{int(time.time())}.zip"
             with zipfile.ZipFile(backup_name, 'w') as backup:
-                if os.path.exists("partner.json22"):
-                    backup.write("partner.json22")
-                if os.path.exists("setting.json7"):
-                    backup.write("setting.json7")
-                if os.path.exists("database7"):
+                if os.path.exists("partner.json9"):
+                    backup.write("partner.json9")
+                if os.path.exists("setting.json5"):
+                    backup.write("setting.json5")
+                if os.path.exists("database5"):
                     for root, dirs, files2 in os.walk("database1"):
                         for f in files2:
                             backup.write(os.path.join(root, f))
@@ -2034,7 +2035,7 @@ def restore_cmd(update, context):
 
         # ================= AUTO RESTART =================
         import os
-        os.execv("/root/partnerbot/venv/bin/python", ["python", "bot1.py"])
+        os.execv("/root/noirbot/venv/bin/python", ["python", "bot6.py"])
 
     except Exception as e:
         update.message.reply_text(f"❌ restore gagal\n{e}")
@@ -2059,7 +2060,7 @@ def main():
     load_autotag()
 
     # 🔥 DATABASE
-    database7.start_database_system(bot)
+    database5.start_database_system(bot)
 
     dp = updater.dispatcher
 
