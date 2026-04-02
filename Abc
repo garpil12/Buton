@@ -729,129 +729,47 @@ def handle_durasi(update, context):
 
 # ================= RUN MANUAL TAGALL =================
 def run_tagall_manual(context, chat_id, msg, mode, duration):
-    global stop_flag, manual_messages
-
-    import random
-    import time
-
-    from emoji import build_emoji  
-
-    stop_flag[chat_id] = False  
-    manual_messages[chat_id] = []  
-
-    members = get_members(chat_id)  
-    if not members:  
-        return  
-
-    user_ids = list(members.keys())  
-    random.shuffle(user_ids)  
-
-    BATCH_SIZE = 4  
-    delay = 1.6  
-    start_time = time.time()  
-    sent = 0  
-    stopped = False  
-
-    btn = custom_buttons.get(str(chat_id))
-
-    while not stop_flag.get(chat_id, False):
-
-        # 🔥 STOP BY DURATION
-        if time.time() - start_time > duration:
-            break
-
-        batch = user_ids[:BATCH_SIZE]
-        user_ids = user_ids[BATCH_SIZE:]
-
-        if not batch:
-            break
-
-        text = msg + "\n" + " ".join(
-            [f"@{uid}" for uid in batch]
-        )
-
-        try:
-            context.bot.send_message(
-                chat_id,
-                text,
-                parse_mode="HTML",
-                reply_markup=btn if btn else None
-            )
-
-            sent += len(batch)
-
-            # 🔥 LOG ACTIVITY (biar rate limit bisa reset)
-            last_activity[chat_id] = time.time()
-
-        except Exception as e:
-            print("SEND ERROR:", e)
-
-            # 🔥 HANDLE FLOOD
-            if "Too Many Requests" in str(e):
-                time.sleep(random.uniform(5, 10))
-                continue
-
-            break
-
-        # 🔥 RANDOM DELAY (ANTI DETECT)
-        time.sleep(delay + random.uniform(0.3, 1.2))
-
-        # 🔥 ADAPTIVE DELAY (kalau udah banyak kirim)
-        if sent > 20:
-            time.sleep(random.uniform(2, 4))
-
-    # 🔥 FINISH
-    print(f"✅ TAGALL DONE | Chat: {chat_id} | Sent: {sent}")
-
-    # ================= LOOP =================  
-    while True:  
-
-        if stop_flag.get(chat_id):  
-            stopped = True  
-            break  
-
-        if duration and time.time() - start_time > duration:  
-            break  
-
-        for i in range(0, len(user_ids), BATCH_SIZE):  
-
-            if stop_flag.get(chat_id):  
-                stopped = True  
-                break  
-
-            if duration and time.time() - start_time > duration:  
-                break  
-
-def run_tagall_manual(context, chat_id, msg, mode, duration):
     global stop_flag, manual_messages, last_activity
 
     import random
     import time
     import html
     import re
+    from collections import deque
 
     from emoji import build_emoji  
 
     stop_flag[chat_id] = False  
     manual_messages[chat_id] = []  
 
-    members = get_members(chat_id)  
+    # ================= GET MEMBERS =================
+    try:
+        members = get_members(chat_id)
+    except Exception as e:
+        print("GET MEMBERS ERROR:", e)
+        return
+
     if not members:  
+        print("❌ MEMBERS KOSONG")
         return  
 
-    user_ids = list(members.keys())  
-    random.shuffle(user_ids)  
+    # ================= QUEUE SYSTEM =================
+    user_ids = list(members.keys())
+    random.shuffle(user_ids)
+    queue = deque(user_ids)
 
-    BATCH_SIZE = 4  
-    delay = 1.6  
+    BATCH_SIZE = 3
+    base_delay = 2.5
+    current_delay = base_delay
+
     start_time = time.time()  
     sent = 0  
     stopped = False  
 
-    btn = custom_buttons.get(str(chat_id))
+    btn = custom_buttons.get(str(chat_id))  
 
     # ================= LOOP =================  
-    while True:  
+    while queue:  
 
         if stop_flag.get(chat_id):  
             stopped = True  
@@ -860,111 +778,100 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
         if duration and time.time() - start_time > duration:  
             break  
 
-        for i in range(0, len(user_ids), BATCH_SIZE):  
+        batch = []
 
-            if stop_flag.get(chat_id):  
-                stopped = True  
-                break  
+        # 🔥 ambil batch dari queue
+        for _ in range(BATCH_SIZE):
+            if queue:
+                batch.append(queue.popleft())
 
-            if duration and time.time() - start_time > duration:  
-                break  
+        if not batch:
+            break  
 
-            batch = user_ids[i:i+BATCH_SIZE]  
-
-            # 🔥 EMOJI RANDOM  
+        # 🔥 EMOJI
+        try:
             emoji_text = build_emoji()
+        except:
+            emoji_text = ""
 
-            # 🔥 USER MENTION (FANCY + CLICKABLE)
-            mention_list = []
-            for uid in batch:
-                name = html.escape(members[uid])
-                fancy = fancy_name(name)
-                mention_list.append(f'<a href="tg://user?id={uid}">{fancy}</a>')
+        # 🔥 MENTION
+        mention_list = []  
+        for uid in batch:  
+            name = html.escape(members.get(uid, "user"))  
+            fancy = fancy_name(name)  
+            mention_list.append(f'<a href="tg://user?id={uid}">{fancy}</a>')  
 
-            mention_text = " ".join(mention_list)
+        mention_text = " ".join(mention_list)  
 
-            # 🔥 FORMAT FINAL (gabungan fitur lama + baru)
-            final_text = f"✦ {msg.upper()} ✦\n\n{emoji_text}\n\n{mention_text}\n\n✦🌑✦"
+        final_text = f"✦ {msg.upper()} ✦\n\n{emoji_text}\n\n{mention_text}\n\n✦🌑✦"  
 
-            # 🔥 BUTTON  
-            if btn:  
-                keyboard = InlineKeyboardMarkup([  
-                    [InlineKeyboardButton(btn["name"], url=btn["link"])]  
-                ])  
-            else:  
-                keyboard = None  
+        if btn:  
+            keyboard = InlineKeyboardMarkup([  
+                [InlineKeyboardButton(btn["name"], url=btn["link"])]  
+            ])  
+        else:  
+            keyboard = None  
 
-            try:  
-                if mode == "reply":  
-                    sent_msg = context.bot.send_message(  
-                        chat_id,  
-                        final_text,  
-                        reply_to_message_id=msg.message_id if hasattr(msg, "message_id") else None,  
-                        parse_mode="HTML",  
-                        reply_markup=keyboard  
-                    )  
-                else:  
-                    sent_msg = context.bot.send_message(  
-                        chat_id,  
-                        final_text,  
-                        parse_mode="HTML",  
-                        reply_markup=keyboard  
-                    )  
+        try:  
+            sent_msg = context.bot.send_message(  
+                chat_id,  
+                final_text,  
+                parse_mode="HTML",  
+                reply_markup=keyboard  
+            )  
 
-                manual_messages[chat_id].append(sent_msg.message_id)  
-                sent += len(batch)  
+            manual_messages[chat_id].append(sent_msg.message_id)  
+            sent += len(batch)  
 
-                # 🔥 LOG ACTIVITY
-                last_activity[chat_id] = time.time()
+            last_activity[chat_id] = time.time()  
 
-            except Exception as e:  
-                if "Retry in" in str(e):  
-                    try:  
-                        wait = int(re.search(r"Retry in (\d+)", str(e)).group(1))  
-                        time.sleep(wait + 1)  
-                    except:  
-                        time.sleep(3)  
-                else:  
-                    print("SEND ERROR:", e)  
-                    time.sleep(1)  
+            # 🔥 sukses → delay normal + random
+            time.sleep(current_delay + random.uniform(0.5, 1.5))  
 
-            # 🔥 LIMIT 10K  
-            if sent >= 10000:  
-                context.bot.send_message(chat_id, "⚠️ Limit 10K tercapai")  
-                stopped = True  
-                break  
+        except Exception as e:  
+            err = str(e)
 
-            if stop_flag.get(chat_id):  
-                stopped = True  
-                break  
+            # ================= FLOOD HANDLER =================
+            if "Retry in" in err:
+                try:
+                    wait = int(re.search(r"Retry in (\d+)", err).group(1))
+                    print(f"⚠️ FLOOD → WAIT {wait}s")
 
-            # 🔥 DELAY AMAN (ANTI FLOOD + ADAPTIVE)
-            for _ in range(int(delay * 10)):  
-                if stop_flag.get(chat_id):  
-                    stopped = True  
-                    break  
-                time.sleep(0.1)  
+                    # 🔥 pause panjang (anti spam lanjut)
+                    time.sleep(wait + random.uniform(1, 3))
 
-            if sent > 20:
-                time.sleep(random.uniform(2, 4))  
+                    # 🔥 masukkan lagi batch ke depan queue (auto retry)
+                    for uid in batch:
+                        queue.appendleft(uid)
 
-            if stopped:  
-                break  
+                    # 🔥 slowdown agresif
+                    current_delay += 2  
 
-        if stopped:  
-            break  
+                except:
+                    time.sleep(5)
 
-        if duration:  
-            break  
+            else:
+                print("SEND ERROR:", e)
+                time.sleep(2)
 
-    # ================= SELESAI =================  
+        # ================= ADAPTIVE CONTROL =================
 
-    if stopped:
-        text_done = "⛔ Tagall dihentikan"
-    else:
-        text_done = f"✅ Tagall selesai\n👥 Total tag: {sent}"
+        if sent > 50:
+            current_delay = 3.5
 
-    # 🔥 BUTTON AKHIR + CLEAR  
+        if sent > 200:
+            current_delay = 5
+
+        if sent > 500:
+            current_delay = 6
+
+        # 🔥 safety tambahan biar gak brutal
+        time.sleep(random.uniform(0.5, 1.5))
+
+    # ================= DONE =================  
+
+    text_done = "⛔ Tagall dihentikan" if stopped else f"✅ Tagall selesai\n👥 Total tag: {sent}"  
+
     if btn:  
         keyboard_clear = InlineKeyboardMarkup([  
             [InlineKeyboardButton(btn["name"], url=btn["link"])],  
@@ -975,18 +882,15 @@ def run_tagall_manual(context, chat_id, msg, mode, duration):
             [InlineKeyboardButton("🧹 CLEAR CHAT", callback_data="manual_clear")]  
         ])  
 
-    done_msg = context.bot.send_message(  
+    context.bot.send_message(  
         chat_id,  
         text_done,  
         reply_markup=keyboard_clear  
     )  
 
-    manual_messages[chat_id].append(done_msg.message_id)  
-
-    print(f"✅ TAGALL DONE | Chat: {chat_id} | Sent: {sent}")
+    print(f"🔥 TAGALL HARDCORE DONE | Chat: {chat_id} | Sent: {sent}")
               
-
-    # ================= AUTO CLEAR =================  
+   # ================= AUTO CLEAR =================  
     def auto_clear():  
         time.sleep(120)  
 
