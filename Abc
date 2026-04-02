@@ -356,52 +356,49 @@ def fancy_name(text):
     return text.translate(str.maketrans(normal, fancy))
 
 def autotag_menu(update: Update, context: CallbackContext):
-    user_id = update.effective_user.id
+    user_id = str(update.effective_user.id)
 
-    if user_id not in OWNER_IDS:
+    if update.effective_user.id not in OWNER_IDS:
         return
 
-    # 🔥 WAJIB PRIVATE
     if update.effective_chat.type != "private":
-        update.message.reply_text("❌ Gunakan di private chat bot")
+        update.message.reply_text("❌ Gunakan di private")
         return
 
     if not context.args:
-        update.message.reply_text("❌ Contoh:\n/autotag pesan lu")
+        update.message.reply_text("❌ Contoh:\n/autotag pesan")
         return
 
     msg = " ".join(context.args)
-    chat_id = str(user_id)  # 🔥 disimpan per user
 
-    auto_data[chat_id] = {
+    if user_id not in auto_data or "chat_id" not in auto_data[user_id]:
+        update.message.reply_text("❌ Lu belum pake bot di grup")
+        return
+
+    auto_data[user_id].update({
         "text": msg,
         "hour": None,
         "minute": 0,
         "duration": 60,
         "active": False
-    }
+    })
 
     save_autotag()
 
-    text = "🕒 PILIH JAM AUTO TAGALL"
-
-    buttons = []
-    row = []
-
+    # 🔥 BUTTON JAM
+    buttons, row = [], []
     for i in range(24):
-        jam = f"{i:02d}:00"
-        row.append(InlineKeyboardButton(jam, callback_data=f"setjam_{i}"))
-
+        row.append(InlineKeyboardButton(f"{i:02d}:00", callback_data=f"setjam_{i}"))
         if len(row) == 4:
             buttons.append(row)
             row = []
-
     if row:
         buttons.append(row)
 
-    keyboard = InlineKeyboardMarkup(buttons)
-
-    update.message.reply_text(text, reply_markup=keyboard)
+    update.message.reply_text(
+        "🕒 PILIH JAM AUTO TAGALL",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
 
 def pilih_jam(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -422,9 +419,17 @@ def pilih_jam(update: Update, context: CallbackContext):
     save_autotag()
 
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("⏱ 30 MENIT", callback_data="autodur_30")],
-        [InlineKeyboardButton("⏱ 60 MENIT", callback_data="autodur_60")],
-        [InlineKeyboardButton("⏱ 120 MENIT", callback_data="autodur_120")]
+        [
+            InlineKeyboardButton("⏱ 10 MENIT", callback_data="autodur_10"),
+            InlineKeyboardButton("⏱ 15 MENIT", callback_data="autodur_15")
+        ],
+        [
+            InlineKeyboardButton("⏱ 30 MENIT", callback_data="autodur_30"),
+            InlineKeyboardButton("⏱ 60 MENIT", callback_data="autodur_60")
+        ],
+        [
+            InlineKeyboardButton("⏱ 120 MENIT", callback_data="autodur_120")
+        ]
     ])
 
     query.edit_message_text(
