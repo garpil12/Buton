@@ -13,28 +13,26 @@ from queue import Queue
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, CommandHandler, CallbackQueryHandler
 from telethon import TelegramClient
-import database9
+import database8
 from emoji import build_emoji
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-TOKEN = "8685315507:AAEc6ybSHdpZSap5mBTvEiHX4e-o8NVnSvg"
+TOKEN = "8618687689:AAFep2yL5CCUgRbT5WVMJazanJ4A46mYfkk"
 API_URL = "http://127.0.0.1:5000/get"
-TARGET_CHATS = [-1002896045673]
-FORCE_GROUP = -1002896045673   # 🔥 WAJIB (buat cek join)
-FORCE_LINK = "https://t.me/ofcnoirfleur"
-OWNER_IDS = [8209644174, 5744453710]
-PARTNER_FILE = "partner.json9"
-SETTING_FILE = "setting.json5"
-SETTING_FILE = "setting.json5"
-QUEUE_FILE = "queue.json5"
-AUTO_TAG_FILE = "autotag.json5"
-BUTTON_FILE = "buttons.json5"
+TARGET_CHATS = [-1003386661267]
+FORCE_GROUP = -1003386661267   # 🔥 WAJIB (buat cek join)
+FORCE_LINK = "https://t.me/officiallgarfieldgrub"
+PARTNER_FILE = "partner.json10"
+SETTING_FILE = "setting.json8"
+QUEUE_FILE = "queue.json10"
+AUTO_TAG_FILE = "autotag.json10"
+BUTTON_FILE = "buttons.json10"
 
 api_id = 33370509
 api_hash = "669af6caebf2aca264b16cf8b40d37b2"
-client = TelegramClient("session_new8", api_id, api_hash)
+client = TelegramClient("session_new10", api_id, api_hash)
 
 task_queue = Queue()
 running_task = False  # 🔥 ANTI DOUBLE TASK
@@ -1183,12 +1181,12 @@ def start_cmd(update: Update, context: CallbackContext):
 
     # ================= RGB GLITCH =================
     glitch = [
-        "💜 𝑵𝑶𝑰𝑹𝑭𝑳𝑼𝑬𝑹 💜",
-        "💙 𝗡𝗢𝗜𝗥𝗙𝗟𝗨𝗘𝗥 💙",
-        "💚 𝙉𝙊𝙄𝙍𝙁𝙇𝙐𝙀𝙍 💚",
-        "💛 𝐍𝐎𝐈𝐑𝐅𝐋𝐔𝐄𝐑 💛",
-        "🧡 𝒩𝒪ℐℛ𝒻𝓁𝓊ℯ𝓇 🧡",
-        "❤️ ＮＯＩＲＦＬＵＥＲ ❤️"
+        "💜 K̷A̷T̷R̷O̷ 💜",
+        "💙 K̶A̶T̶R̶O̶ 💙",
+        "💚 K̵A̵T̵R̵O̵ 💚",
+        "💛 K̷A̷T̷R̷O̷ 💛",
+        "🧡 K̶A̶T̶R̶O̶ 🧡",
+        "❤️ K̵A̵T̵R̵O̵ ❤️"
 ]
 
     for g in glitch:
@@ -1232,7 +1230,7 @@ def start_cmd(update: Update, context: CallbackContext):
 
     # ================= FINAL TEXT (FIX CLEAN) =================
     text = (
-        "𓊆 ✨  𝐖𝐄𝐋𝐂𝐎𝐌𝐄 𝐓𝐎 𝗕𝗢𝗧 𝙉𝙊𝙄𝙍𝙁𝙇𝙐𝙀𝙍 ✨ 𓊇 \n\n"
+        "𓊆 ✨  𝐖𝐄𝐋𝐂𝐎𝐌𝐄 𝐓𝐎 𝗕𝗢𝗧 𝐊𝐀𝐓𝐑𝐎 ✨ 𓊇 \n\n"
 
         "╭───────────────╮\n"
         "│ ٬٬ ࣪ ، 𒀭 bot tag all dengan sistem otomatis.\n"
@@ -1272,7 +1270,7 @@ def start_cmd(update: Update, context: CallbackContext):
         pass
 
     # ================= FOTO SYSTEM =================
-    photo_path = "database9/start.jpg"
+    photo_path = "database8/start.jpg"
 
     if data.get("start_pict"):
         context.bot.send_photo(
@@ -1531,7 +1529,7 @@ def get_members(chat_id):
 
 
 # ================= LIMIT GC =================
-LIMIT_FILE = "limit_gc.json5"
+LIMIT_FILE = "limit_gc.json10"
 
 from datetime import datetime, timedelta, timezone
 
@@ -1681,7 +1679,7 @@ def tagall_worker():
                 "🚀 𝐓𝐀𝐆𝐀𝐋𝐋 𝐃𝐈𝐌𝐔𝐋𝐀𝐈\n\n"
                 f"🔗 partner : {partner_link}\n"
                 "⏰    durasi : 5 menit\n"
-                "📍 JIKA BOT EROR SILAHKAN KESINI @tagallnoirfluerBot"
+                "📍 JIKA BOT EROR SILAHKAN KESINI @@katrotagallBot"
             )
 
             keyboard_start = InlineKeyboardMarkup([
@@ -1737,7 +1735,7 @@ def tagall_worker():
                         try:
                             msg = bot.send_message(
                                 chat_id,
-                                f" 💕 𝑩𝑶𝑻 𝑻𝑨𝑮𝑨𝑳𝑳 𝙉𝙊𝙄𝙍𝙁𝙇𝙐𝙀𝙍 💖\n\n{text}\n\n{mention_text}",
+                                f" 💕 𝑩𝑶𝑻 𝑻𝑨𝑮𝑨𝑳𝑳 𝐊𝐀𝐓𝐑𝐎 💖\n\n{text}\n\n{mention_text}",
                                 parse_mode="HTML",
                                 timeout=10
                             )
@@ -2019,12 +2017,12 @@ def restore_cmd(update, context):
             # ================= BACKUP LAMA =================
             backup_name = f"backup_before_restore_{int(time.time())}.zip"
             with zipfile.ZipFile(backup_name, 'w') as backup:
-                if os.path.exists("partner.json9"):
-                    backup.write("partner.json9")
-                if os.path.exists("setting.json5"):
-                    backup.write("setting.json5")
-                if os.path.exists("database9"):
-                    for root, dirs, files2 in os.walk("database9"):
+                if os.path.exists("partner.json10"):
+                    backup.write("partner.json910")
+                if os.path.exists("setting.json8"):
+                    backup.write("setting.json8")
+                if os.path.exists("database8"):
+                    for root, dirs, files2 in os.walk("database8"):
                         for f in files2:
                             backup.write(os.path.join(root, f))
 
@@ -2060,7 +2058,7 @@ def main():
     load_autotag()
 
     # 🔥 DATABASE
-    database9.start_database_system(bot)
+    database8.start_database_system(bot)
 
     dp = updater.dispatcher
 
