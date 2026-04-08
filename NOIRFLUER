@@ -8,7 +8,8 @@ import json
 import re
 import random   # 🔥 WAJIB
 import html     # 🔥 biar ga error escape
-
+import subprocess
+import zipfile
 from queue import Queue
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, CommandHandler, CallbackQueryHandler
@@ -31,7 +32,8 @@ SETTING_FILE = "setting.json5"
 QUEUE_FILE = "queue.json5"
 AUTO_TAG_FILE = "autotag.json5"
 BUTTON_FILE = "buttons.json5"
-
+BACKUP_DIR = "backups"
+SERVICE_NAME = "noirbot"
 api_id = 33370509
 api_hash = "669af6caebf2aca264b16cf8b40d37b2"
 client = TelegramClient("session_new8", api_id, api_hash)
